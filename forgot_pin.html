@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Reset PIN — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  .auth-glow {
+    position:fixed; bottom:0; left:0;
+    width:500px; height:500px;
+    background:radial-gradient(ellipse, rgba(245,158,11,0.08) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .fp-card {
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:var(--r-lg); padding:40px;
+    width:100%; max-width:480px;
+    animation:authIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes authIn {
+    from{opacity:0;transform:translateY(24px) scale(0.97)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .step-indicator {
+    display:flex; gap:8px; margin-bottom:28px;
+  }
+  .step {
+    flex:1; height:3px; border-radius:100px;
+    background:var(--bg3); position:relative; overflow:hidden;
+  }
+  .step.active::after {
+    content:'';
+    position:absolute; inset:0;
+    background:var(--gold);
+    animation:fillStep 0.4s ease forwards;
+  }
+  @keyframes fillStep { from{width:0} to{width:100%} }
+
+  .auth-title { font-family:'Syne',sans-serif; font-size:1.6rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:6px; }
+  .auth-sub { font-size:0.88rem; color:var(--text2); margin-bottom:28px; }
+  .section-divider {
+    font-size:0.68rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase;
+    color:var(--text3); margin:20px 0 16px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .section-divider::before,.section-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+  .btn-reset {
+    background:linear-gradient(135deg, var(--gold), #d97706);
+    color:#000; border:none; cursor:pointer;
+    width:100%; padding:14px;
+    border-radius:var(--r-sm);
+    font-family:'Syne',sans-serif; font-size:0.95rem; font-weight:700;
+    box-shadow:0 4px 24px rgba(245,158,11,0.25);
+    transition:all 0.2s;
+  }
+  .btn-reset:hover { transform:translateY(-1px); box-shadow:0 8px 32px rgba(245,158,11,0.4); }
+  .auth-footer { text-align:center; margin-top:24px; font-size:0.85rem; color:var(--text3); }
+  .auth-footer a { color:var(--accent2); text-decoration:none; font-weight:500; }
+  .info-box {
+    background:rgba(245,158,11,0.06);
+    border:1px solid rgba(245,158,11,0.2);
+    border-radius:var(--r-sm);
+    padding:12px 16px; font-size:0.8rem; color:var(--gold);
+    margin-bottom:24px;
+    display:flex; align-items:flex-start; gap:8px;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="auth-glow"></div>
+<div class="page-center">
+  <div class="fp-card">
+    <div class="step-indicator">
+      <div class="step active"></div>
+      <div class="step active"></div>
+      <div class="step active"></div>
+    </div>
+
+    <div class="auth-title">Reset your PIN</div>
+    <p class="auth-sub">Verify your identity to set a new PIN</p>
+
+    <div class="info-box">
+      🔐 We'll verify your account number, name, and registered phone before allowing a PIN change.
+    </div>
+
+    <form method="POST" action="{{ url_for('forgot_pin') }}">
+      <div class="form-group">
+        <label class="form-label">Account Number</label>
+        <input class="form-input" type="text" name="account_number"
+          placeholder="0000 0000 0000" required autocomplete="off" style="letter-spacing:0.08em" />
+      </div>
+
+      <div class="section-divider">Identity Verification</div>
+
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input class="form-input" type="text" name="name" placeholder="John Doe" required autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Registered Phone</label>
+          <input class="form-input" type="tel" name="phone" placeholder="9876543210" maxlength="10" required autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="section-divider">New PIN</div>
+
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">New PIN</label>
+          <input class="form-input" type="password" name="new_pin" placeholder="••••" maxlength="4" required id="np1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm New PIN</label>
+          <input class="form-input" type="password" name="new_pin2" placeholder="••••" maxlength="4" required id="np2" />
+        </div>
+      </div>
+
+      <button type="submit" class="btn-reset mt-8">Reset PIN →</button>
+    </form>
+
+    <div class="auth-footer">
+      Remembered your PIN? <a href="{{ url_for('login') }}">Sign in</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const np2 = document.getElementById('np2');
+  np2.addEventListener('input', () => {
+    np2.style.borderColor = np2.value === document.getElementById('np1').value && np2.value
+      ? 'var(--green)' : np2.value ? 'var(--red)' : '';
+  });
+</script>
+{% endblock %}

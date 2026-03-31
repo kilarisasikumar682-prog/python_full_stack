@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% block title %}Admin Deposit Requests — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  .admin-page { background: var(--bg); min-height: calc(100vh - 64px); padding-bottom: 60px; }
+  
+  /* ── HEADER ── */
+  .admin-header {
+    background: linear-gradient(135deg, #0d0608, #120a0a);
+    border-bottom: 1px solid rgba(239,68,68,0.15);
+    padding: 28px 40px;
+  }
+  .admin-header-inner { max-width: 1400px; margin: 0 auto; }
+  .back-link { 
+    color: var(--text3); font-size: 0.85rem; text-decoration: none; 
+    margin-bottom: 12px; display: inline-block; transition: 0.2s; font-weight: 600;
+  }
+  .back-link:hover { color: var(--red); }
+  .admin-title-row { display: flex; align-items: center; gap: 14px; }
+  .admin-icon {
+    width: 44px; height: 44px; background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.3); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+  }
+  .admin-title { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--text); }
+  
+  .admin-body { max-width: 1400px; margin: 32px auto 0; padding: 0 40px; }
+  @media(max-width: 768px) { .admin-body { padding: 0 20px; } }
+
+  /* ── STATS ROW ── */
+  .stats-grid { 
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+    gap: 16px; margin-bottom: 28px; 
+  }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border); 
+    border-radius: var(--r); padding: 20px 18px; position: relative; overflow: hidden;
+  }
+  .stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card.c-blue::after { background: var(--blue, #3b82f6); }
+  .stat-card.c-gold::after { background: #f59e0b; }
+  .stat-card.c-green::after { background: var(--green); }
+  .stat-card.c-red::after { background: var(--red); }
+  
+  .stat-lbl { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+  .stat-val { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; }
+  .stat-val.gold { color: #f59e0b; }
+  .stat-val.green { color: var(--green); }
+  .stat-val.red { color: var(--red); }
+  .stat-val.blue { color: #3b82f6; }
+
+  /* ── FILTERS ── */
+  .filters { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+  .filter-btn {
+    background: var(--bg2); border: 1px solid var(--border); color: var(--text2);
+    padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.85rem;
+    cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .filter-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+  .filter-btn.active { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: var(--red); }
+
+  /* ── TABLE ── */
+  .table-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+  .table-responsive { width: 100%; overflow-x: auto; }
+  table.admin-tbl { width: 100%; border-collapse: collapse; white-space: nowrap; }
+  table.admin-tbl th {
+    padding: 16px 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text3); border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.015); text-align: left;
+  }
+  table.admin-tbl td {
+    padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 0.85rem; color: var(--text2); vertical-align: middle;
+  }
+  table.admin-tbl tr:last-child td { border-bottom: none; }
+  table.admin-tbl tbody tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* ── UTILITIES & BADGES ── */
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+  .val-pos { color: var(--green); font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; }
+  .sub-text { display: block; font-size: 0.75rem; color: var(--text3); margin-top: 4px; }
+  .customer-name { font-family: 'Instrument Sans', sans-serif; font-weight: 600; color: var(--text); }
+  
+  .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
+  .b-pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+  .b-approved { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+  .b-rejected { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+  .b-frozen { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.2); margin-top: 6px; }
+
+  /* ── BUTTONS ── */
+  .action-flex { display: flex; gap: 8px; align-items: center; }
+  .btn-sm { padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; cursor: pointer; border: none; font-weight: 600; transition: 0.2s; font-family: 'Instrument Sans', sans-serif; }
+  .btn-approve { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .btn-approve:hover { background: rgba(16, 185, 129, 0.25); }
+  .btn-reject { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .btn-reject:hover { background: rgba(239, 68, 68, 0.25); }
+
+  .empty-state { text-align: center; padding: 60px; color: var(--text3); }
+
+  /* ── MODAL ── */
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+  .modal.active { display: flex; }
+  .modal-content { background: var(--bg2); border: 1px solid var(--border); padding: 32px; border-radius: 12px; width: 100%; max-width: 450px; color: var(--text); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+  .modal-content h3 { font-family: 'Syne', sans-serif; color: var(--red); margin-top: 0; margin-bottom: 12px; font-size: 1.3rem; }
+  .form-control { width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; font-family: inherit; margin-bottom: 24px; resize: vertical; margin-top: 8px;}
+  .form-control:focus { outline: none; border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
+  .btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--text2); padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  .btn-cancel:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+  .btn-confirm-reject { background: var(--red); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  .btn-confirm-reject:hover { filter: brightness(1.1); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="admin-page">
+  
+  <div class="admin-header">
+    <div class="admin-header-inner">
+      <a href="{{ url_for('admin_dashboard') }}" class="back-link">← Back to Admin Dashboard</a>
+      <div class="admin-title-row">
+        <div class="admin-icon">💰</div>
+        <div>
+          <div class="admin-title">Deposit Requests</div>
+          <div class="sub-text" style="margin-top:2px;">Review and manage customer fund deposits</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-body">
+    
+    <div class="stats-grid">
+      <div class="stat-card c-blue">
+        <div class="stat-lbl">Total Requests</div>
+        <div class="stat-val">{{ stats.total or 0 }}</div>
+      </div>
+      <div class="stat-card c-gold">
+        <div class="stat-lbl">Pending</div>
+        <div class="stat-val gold">{{ stats.pending or 0 }}</div>
+      </div>
+      <div class="stat-card c-green">
+        <div class="stat-lbl">Approved</div>
+        <div class="stat-val green">{{ stats.approved or 0 }}</div>
+      </div>
+      <div class="stat-card c-red">
+        <div class="stat-lbl">Rejected</div>
+        <div class="stat-val red">{{ stats.rejected or 0 }}</div>
+      </div>
+      <div class="stat-card c-gold">
+        <div class="stat-lbl">Pending Amount</div>
+        <div class="stat-val gold">${{ "%.0f"|format(stats.total_pending_amount or 0) }}</div>
+      </div>
+      <div class="stat-card c-green">
+        <div class="stat-lbl">Approved Amount</div>
+        <div class="stat-val green">${{ "%.0f"|format(stats.total_approved_amount or 0) }}</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <a href="{{ url_for('admin_deposit_requests', status='pending') }}" class="filter-btn {% if current_filter == 'pending' %}active{% endif %}">
+        ⏳ Pending ({{ stats.pending or 0 }})
+      </a>
+      <a href="{{ url_for('admin_deposit_requests', status='approved') }}" class="filter-btn {% if current_filter == 'approved' %}active{% endif %}">
+        ✅ Approved ({{ stats.approved or 0 }})
+      </a>
+      <a href="{{ url_for('admin_deposit_requests', status='rejected') }}" class="filter-btn {% if current_filter == 'rejected' %}active{% endif %}">
+        ❌ Rejected ({{ stats.rejected or 0 }})
+      </a>
+      <a href="{{ url_for('admin_deposit_requests', status='all') }}" class="filter-btn {% if current_filter == 'all' %}active{% endif %}">
+        📋 All Requests ({{ stats.total or 0 }})
+      </a>
+    </div>
+
+    <div class="table-card">
+      {% if requests %}
+      <div class="table-responsive">
+        <table class="admin-tbl">
+          <thead>
+            <tr>
+              <th>Request ID</th>
+              <th>Customer Info</th>
+              <th>Current Bal.</th>
+              <th>Request Amt</th>
+              <th>Status</th>
+              <th>Reason / Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in requests %}
+            <tr>
+              <td>
+                <span class="mono" style="color: var(--text);">{{ req.request_id }}</span>
+                <span class="sub-text">{{ req.requested_at.strftime('%b %d, %Y %H:%M') if req.requested_at else '-' }}</span>
+              </td>
+              
+              <td>
+                <div class="customer-name">{{ req.account_holder }}</div>
+                <div class="mono" style="color: var(--text3); font-size: 0.75rem; margin-top: 2px;">{{ fmt_acc(req.account_number) }}</div>
+                {% if req.is_frozen %}
+                  <span class="badge b-frozen">Account Frozen</span>
+                {% endif %}
+              </td>
+              
+              <td class="mono">${{ "%.2f"|format(req.balance) }}</td>
+              
+              <td class="val-pos">+${{ "%.2f"|format(req.amount) }}</td>
+              
+              <td>
+                {% if req.status == 'pending' %}
+                  <span class="badge b-pending">Pending</span>
+                {% elif req.status == 'approved' %}
+                  <span class="badge b-approved">Approved</span>
+                {% elif req.status == 'rejected' %}
+                  <span class="badge b-rejected">Rejected</span>
+                {% endif %}
+              </td>
+              
+              <td style="max-width: 250px; white-space: normal; font-size: 0.8rem;">
+                {{ req.reason or '-' }}
+              </td>
+              
+              <td>
+                {% if req.status == 'pending' %}
+                  <div class="action-flex">
+                    <form method="POST" action="{{ url_for('admin_approve_deposit', request_id=req.request_id) }}" style="margin: 0;" onsubmit="return confirm('Approve deposit of ${{ "%.2f"|format(req.amount) }} for {{ req.account_holder }}?')">
+                      <button type="submit" class="btn-sm btn-approve">✓ Approve</button>
+                    </form>
+                    <button onclick="showRejectModal('{{ req.request_id }}', '{{ req.account_holder }}', {{ req.amount }})" class="btn-sm btn-reject">✗ Reject</button>
+                  </div>
+                {% elif req.status == 'approved' %}
+                  <span style="color: var(--green); font-size: 0.8rem;">Processed by Admin</span>
+                  <span class="sub-text">{{ req.processed_at.strftime('%b %d, %H:%M') if req.processed_at else '' }}</span>
+                {% elif req.status == 'rejected' %}
+                  <span style="color: var(--red); font-size: 0.8rem;"><strong>Note:</strong> {{ req.rejection_reason }}</span>
+                  <span class="sub-text">{{ req.processed_at.strftime('%b %d, %H:%M') if req.processed_at else '' }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.6;">📝</div>
+        <h3 style="color: var(--text); font-family: 'Syne', sans-serif; font-size: 1.2rem;">No Requests Found</h3>
+        <p style="margin-top: 6px;">{% if current_filter == 'pending' %}There are no pending deposit requests at the moment.{% else %}Try changing your filters to see more results.{% endif %}</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<div id="rejectModal" class="modal">
+  <div class="modal-content">
+    <h3>❌ Reject Deposit</h3>
+    <p id="rejectMessage" style="color: var(--text2); font-size: 0.9rem; line-height: 1.5;"></p>
+    
+    <form method="POST" id="rejectForm">
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text3); text-transform: uppercase; margin-top: 20px;">Reason for Rejection:</label>
+        <textarea name="reason" rows="4" class="form-control" required placeholder="e.g., Suspicious activity, missing documentation..."></textarea>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="hideRejectModal()">Cancel</button>
+        <button type="submit" class="btn-confirm-reject">Confirm Rejection</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function showRejectModal(requestId, customerName, amount) {
+    document.getElementById('rejectMessage').innerHTML = 
+      `Are you sure you want to reject the deposit request of <strong style="color:var(--text)">$${amount.toFixed(2)}</strong> from <strong style="color:var(--text)">${customerName}</strong>?`;
+    document.getElementById('rejectForm').action = `/admin/deposit-requests/reject/${requestId}`;
+    document.getElementById('rejectModal').classList.add('active');
+  }
+
+  function hideRejectModal() {
+    document.getElementById('rejectModal').classList.remove('active');
+  }
+
+  // Close modal when clicking outside the box
+  window.onclick = function(event) {
+    const modal = document.getElementById('rejectModal');
+    if (event.target === modal) {
+      hideRejectModal();
+    }
+  }
+</script>
+{% endblock %}

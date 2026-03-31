@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Search Logs — Admin{% endblock %}
+
+{% block head %}
+<style>
+  .logs-page { max-width:960px; margin:0 auto; padding:40px 24px 80px; }
+  .page-heading { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:4px; }
+  .page-sub { font-size:0.88rem; color:var(--text2); margin-bottom:32px; }
+
+  .search-bar {
+    display:flex; gap:10px; margin-bottom:24px;
+  }
+  .search-bar .form-input { flex:1; }
+
+  .results-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
+  .log-item {
+    display:flex; align-items:center; gap:14px;
+    padding:14px 24px; border-bottom:1px solid rgba(255,255,255,0.03);
+  }
+  .log-item:last-child { border-bottom:none; }
+  .log-item:hover { background:rgba(255,255,255,0.02); }
+  .log-ref { font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--accent2); min-width:110px; }
+  .log-type { min-width:110px; }
+  .log-desc { flex:1; font-size:0.8rem; color:var(--text2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .log-amt  { font-family:'JetBrains Mono',monospace; font-size:0.82rem; min-width:80px; text-align:right; }
+  .log-date { font-size:0.7rem; color:var(--text3); font-family:'JetBrains Mono',monospace; min-width:130px; text-align:right; }
+  .empty-state { padding:60px; text-align:center; color:var(--text3); }
+  .empty-icon  { font-size:2.5rem; margin-bottom:12px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="logs-page">
+  <a href="{{ url_for('admin_dashboard') }}" class="btn btn-ghost" style="padding-left:0;margin-bottom:16px">← Admin Panel</a>
+  <div class="page-heading">Search Logs</div>
+  <div class="page-sub">Search transaction history by account number, name, or description</div>
+
+  <form method="GET" action="{{ url_for('admin_search_logs') }}">
+    <div class="search-bar">
+      <input class="form-input" type="text" name="q" value="{{ query }}"
+        placeholder="Search by account number or keyword..." autofocus />
+      <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+  </form>
+
+  {% if query %}
+  <div class="results-card">
+    {% if logs %}
+    {% for l in logs %}
+    {% set is_credit = l.log_type in ['DEPOSIT','TRANSFER_IN','INTEREST'] %}
+    {% set is_debit  = l.log_type in ['WITHDRAW','TRANSFER_OUT'] %}
+    <div class="log-item">
+      <span class="log-ref">{{ l.account_ref }}</span>
+      <span class="log-type">
+        <span class="badge badge-purple">{{ l.log_type.replace('_',' ') }}</span>
+      </span>
+      <span class="log-desc">{{ l.description or '—' }}</span>
+      <span class="log-amt" style="{{ 'color:var(--green)' if is_credit else 'color:var(--red)' if is_debit else 'color:var(--text2)' }}">
+        {% if l.amount %}${{ "%.2f"|format(l.amount) }}{% endif %}
+      </span>
+      <span class="log-date">{{ l.created_at }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <div>No logs matching <strong>"{{ query }}"</strong></div>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="results-card">
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div>Enter a search term above to find transactions</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

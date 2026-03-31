@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Open Account — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  .auth-glow {
+    position:fixed; top:0; left:0;
+    width:600px; height:600px;
+    background:radial-gradient(ellipse, rgba(124,106,247,0.1) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .reg-card {
+    background:var(--bg2);
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);
+    padding:40px;
+    width:100%; max-width:520px;
+    animation:authIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes authIn {
+    from{opacity:0;transform:translateY(24px) scale(0.97)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .auth-title {
+    font-family:'Syne',sans-serif;
+    font-size:1.7rem; font-weight:800;
+    letter-spacing:-0.03em; margin-bottom:6px;
+  }
+  .auth-sub { font-size:0.88rem; color:var(--text2); margin-bottom:32px; }
+
+  .acc-type-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:12px;
+    margin-bottom:0;
+  }
+  .acc-type-option { position:relative; }
+  .acc-type-option input[type=radio] { position:absolute; opacity:0; width:0; height:0; }
+  .acc-type-label {
+    display:block;
+    background:var(--bg3);
+    border:1px solid var(--border);
+    border-radius:var(--r-sm);
+    padding:16px 14px;
+    cursor:pointer;
+    transition:all 0.15s;
+  }
+  .acc-type-label:hover { border-color:rgba(124,106,247,0.4); }
+  .acc-type-option input[type=radio]:checked + .acc-type-label {
+    border-color:var(--accent);
+    background:rgba(124,106,247,0.08);
+    box-shadow:0 0 0 3px rgba(124,106,247,0.12);
+  }
+  .acc-type-icon { font-size:1.4rem; margin-bottom:8px; }
+  .acc-type-name {
+    font-family:'Syne',sans-serif;
+    font-size:0.88rem; font-weight:700; margin-bottom:4px;
+  }
+  .acc-type-desc { font-size:0.75rem; color:var(--text3); line-height:1.4; }
+
+  .btn-register {
+    background:linear-gradient(135deg, var(--accent), var(--accent3));
+    color:#fff; border:none; cursor:pointer;
+    width:100%; padding:14px;
+    border-radius:var(--r-sm);
+    font-family:'Syne',sans-serif;
+    font-size:0.95rem; font-weight:700;
+    transition:all 0.2s;
+    box-shadow:0 4px 24px rgba(124,106,247,0.3);
+  }
+  .btn-register:hover { transform:translateY(-1px); box-shadow:0 8px 32px rgba(124,106,247,0.45); }
+  .auth-footer { text-align:center; margin-top:24px; font-size:0.85rem; color:var(--text3); }
+  .auth-footer a { color:var(--accent2); text-decoration:none; font-weight:500; }
+  .auth-footer a:hover { text-decoration:underline; }
+
+  .strength-bar { display:flex; gap:4px; margin-top:8px; }
+  .strength-seg {
+    flex:1; height:3px; border-radius:100px;
+    background:var(--bg3); transition:background 0.3s;
+  }
+  .strength-seg.fill-1 { background:#ef4444; }
+  .strength-seg.fill-2 { background:#f59e0b; }
+  .strength-seg.fill-3 { background:#3b82f6; }
+  .strength-seg.fill-4 { background:#22c55e; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="auth-glow"></div>
+<div class="page-center">
+  <div class="reg-card">
+    <h1 class="auth-title">Open your account</h1>
+    <p class="auth-sub">Join PyBank — takes less than 60 seconds</p>
+
+    <form method="POST" action="{{ url_for('register') }}">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" type="text" name="name"
+          value="{{ form.get('name','') }}"
+          placeholder="John Doe" required autocomplete="off" />
+        <div class="form-hint">Letters only, no numbers or special characters.</div>
+      </div>
+
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input class="form-input" type="tel" name="phone"
+            value="{{ form.get('phone','') }}"
+            placeholder="9876543210" maxlength="10" required autocomplete="off" />
+          <div class="form-hint">10 digits, cannot start with 0.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Account Type</label>
+          <select class="form-select" name="account_type">
+            <option value="SavingsAccount">Savings (5% Interest)</option>
+            <option value="CheckingAccount">Checking ($500 Overdraft)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">Set PIN</label>
+          <input class="form-input" type="password" name="pin" id="pin-input"
+            placeholder="••••" maxlength="4" required autocomplete="off" />
+          <div class="strength-bar">
+            <div class="strength-seg" id="s1"></div>
+            <div class="strength-seg" id="s2"></div>
+            <div class="strength-seg" id="s3"></div>
+            <div class="strength-seg" id="s4"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm PIN</label>
+          <input class="form-input" type="password" name="pin2" id="pin2-input"
+            placeholder="••••" maxlength="4" required autocomplete="off" />
+        </div>
+      </div>
+
+      <button type="submit" class="btn-register mt-8">Create Account →</button>
+    </form>
+
+    <div class="auth-footer">
+      Already have an account?
+      <a href="{{ url_for('login') }}">Sign in</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const pin = document.getElementById('pin-input');
+  const pin2 = document.getElementById('pin2-input');
+  const segs = [1,2,3,4].map(i => document.getElementById('s'+i));
+  const fills = ['fill-1','fill-2','fill-3','fill-4'];
+
+  pin.addEventListener('input', () => {
+    const v = pin.value;
+    segs.forEach((s,i) => { s.className = 'strength-seg' + (i < v.length ? ' '+fills[Math.min(v.length-1,3)] : ''); });
+  });
+
+  pin2.addEventListener('input', () => {
+    pin2.style.borderColor = pin2.value && pin2.value === pin.value
+      ? 'var(--green)' : pin2.value ? 'var(--red)' : '';
+  });
+</script>
+{% endblock %}

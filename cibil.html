@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}CIBIL Score — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  .cibil-page { max-width:700px; margin:0 auto; padding:40px 24px 80px; }
+  .page-heading { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:4px; }
+  .page-sub { font-size:0.88rem; color:var(--text2); margin-bottom:40px; }
+
+  .score-hero {
+    background:var(--bg2);
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);
+    padding:48px;
+    text-align:center;
+    position:relative; overflow:hidden;
+    margin-bottom:24px;
+  }
+  .score-hero::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background:{{ color }};
+  }
+  .score-ring {
+    width:160px; height:160px;
+    margin:0 auto 24px;
+    position:relative;
+  }
+  .score-ring svg { transform:rotate(-90deg); }
+  .score-ring-bg { fill:none; stroke:var(--bg3); stroke-width:10; }
+  .score-ring-fill { fill:none; stroke-width:10; stroke-linecap:round; transition:stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1); }
+  .score-center {
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+  }
+  .score-num {
+    font-family:'Syne',sans-serif;
+    font-size:3rem; font-weight:800; letter-spacing:-0.04em;
+    color:{{ color }};
+    line-height:1;
+  }
+  .score-slash { font-size:0.75rem; color:var(--text3); margin-top:2px; }
+  .score-label {
+    font-family:'Syne',sans-serif;
+    font-size:1.3rem; font-weight:700;
+    color:{{ color }}; margin-bottom:8px;
+  }
+  .score-advice { font-size:0.95rem; color:var(--text2); line-height:1.7; max-width:400px; margin:0 auto 24px; }
+
+  .score-bar {
+    height:8px; background:var(--bg3); border-radius:100px;
+    overflow:hidden; max-width:400px; margin:0 auto 8px;
+  }
+  .score-fill { height:100%; border-radius:100px; background:{{ color }}; transition:width 1.2s ease; }
+  .score-range { display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text3); font-family:'JetBrains Mono',monospace; max-width:400px; margin:0 auto; }
+
+  .factors-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:500px){ .factors-grid{grid-template-columns:1fr;} }
+  .factor-card {
+    background:var(--bg2); border:1px solid var(--border); border-radius:var(--r);
+    padding:20px;
+  }
+  .factor-label { font-size:0.7rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+  .factor-val { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="cibil-page">
+  <a href="{{ url_for('dashboard') }}" class="btn btn-ghost" style="padding-left:0;margin-bottom:16px">← Dashboard</a>
+  <div class="page-heading">CIBIL Score</div>
+  <div class="page-sub">Your real-time credit health report</div>
+
+  <div class="score-hero">
+    <div class="score-ring">
+      <svg width="160" height="160" viewBox="0 0 160 160">
+        <circle class="score-ring-bg" cx="80" cy="80" r="70" />
+        <circle class="score-ring-fill" id="ring-fill" cx="80" cy="80" r="70"
+          stroke="{{ color }}"
+          stroke-dasharray="{{ 2 * 3.14159 * 70 }}"
+          stroke-dashoffset="{{ 2 * 3.14159 * 70 }}"
+        />
+      </svg>
+      <div class="score-center">
+        <div class="score-num">{{ score }}</div>
+        <div class="score-slash">/ 900</div>
+      </div>
+    </div>
+    <div class="score-label">{{ label }}</div>
+    <p class="score-advice">{{ advice }}</p>
+    <div class="score-bar"><div class="score-fill" id="score-fill" style="width:0"></div></div>
+    <div class="score-range"><span>300 Poor</span><span>600 Good</span><span>750+ Excellent</span></div>
+  </div>
+
+  <div class="factors-grid">
+    <div class="factor-card">
+      <div class="factor-label">Score Range</div>
+      <div class="factor-val">300–900</div>
+    </div>
+    <div class="factor-card">
+      <div class="factor-label">Your Score</div>
+      <div class="factor-val" style="color:{{ color }}">{{ score }}</div>
+    </div>
+    <div class="factor-card">
+      <div class="factor-label">Deposits → +5 pts</div>
+      <div class="factor-val" style="color:var(--green)">Positive</div>
+    </div>
+    <div class="factor-card">
+      <div class="factor-label">Withdrawals → -10 pts</div>
+      <div class="factor-val" style="color:var(--red)">Negative</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const pct   = {{ pct }};
+  const circ  = 2 * Math.PI * 70;
+  const fill  = document.getElementById('ring-fill');
+  const sbar  = document.getElementById('score-fill');
+  setTimeout(() => {
+    fill.style.strokeDashoffset  = circ - (circ * pct / 100);
+    fill.style.transition        = 'stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)';
+    sbar.style.width             = pct + '%';
+  }, 200);
+</script>
+{% endblock %}

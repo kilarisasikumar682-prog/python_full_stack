@@ -1,0 +1,540 @@
+{% extends "base.html" %}
+{% block title %}Bank Statement — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  :root {
+    --card-bg: var(--bg2, #1e293b);
+    --card-border: var(--border, #334155);
+    --text-muted: var(--text3, #94a3b8);
+  }
+
+  .statement-page {
+    background: var(--bg, #0f172a);
+    min-height: calc(100vh - 64px);
+    color: var(--text, #f8fafc);
+    font-family: 'Instrument Sans', system-ui, sans-serif;
+  }
+
+  .statement-header {
+    background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+    border-bottom: 1px solid var(--card-border);
+    padding: 40px;
+    text-align: center;
+  }
+
+  .statement-header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 16px;
+  }
+
+  .statement-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px;
+  }
+
+  .download-btns {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+
+  .btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+  }
+
+  .btn-pdf {
+    background: #dc2626;
+    color: white;
+  }
+
+  .btn-pdf:hover {
+    background: #b91c1c;
+    transform: translateY(-2px);
+  }
+
+  .btn-csv {
+    background: #10b981;
+    color: white;
+  }
+
+  .btn-csv:hover {
+    background: #059669;
+    transform: translateY(-2px);
+  }
+
+  .section {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 28px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--card-border);
+    color: #3b82f6;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .info-item {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .info-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .info-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    word-break: break-all;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--card-border);
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .data-table th {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    padding: 14px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--card-border);
+  }
+
+  .data-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  }
+
+  .data-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .badge-deposit {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+  }
+
+  .badge-withdraw {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .badge-transfer {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+  }
+
+  .badge-active {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+  }
+
+  .badge-closed {
+    background: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+  }
+
+  .amount-positive {
+    color: #10b981;
+    font-weight: 600;
+  }
+
+  .amount-negative {
+    color: #ef4444;
+    font-weight: 600;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 40px;
+    color: var(--text-muted);
+  }
+
+  .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 24px;
+    transition: all 0.2s;
+  }
+
+  .back-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  @media (max-width: 768px) {
+    .statement-container {
+      padding: 20px;
+    }
+
+    .download-btns {
+      flex-direction: column;
+    }
+
+    .btn-download {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .data-table {
+      font-size: 0.8rem;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 10px 8px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="statement-page">
+  <div class="statement-header">
+    <h1>📊 Bank Statement</h1>
+    <p style="color: var(--text-muted); margin-top: 8px;">
+      Account: {{ fmt_acc(acc.account_number) }}
+    </p>
+  </div>
+
+  <div class="statement-container">
+    <a href="{{ url_for('dashboard') }}" class="back-btn">← Back to Dashboard</a>
+
+    <div class="download-btns">
+      <a href="{{ url_for('download_statement', format='pdf') }}" class="btn-download btn-pdf">
+        📄 Download as PDF
+      </a>
+      <a href="{{ url_for('download_statement', format='csv') }}" class="btn-download btn-csv">
+        📋 Download as CSV
+      </a>
+    </div>
+
+    <!-- Account Information Section -->
+    <div class="section">
+      <div class="section-title">Account Information</div>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Account Holder</div>
+          <div class="info-value">{{ acc.account_holder }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Account Number</div>
+          <div class="info-value">{{ fmt_acc(acc.account_number) }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Account Type</div>
+          <div class="info-value">{{ acc.account_type.replace('Account', '') }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Current Balance</div>
+          <div class="info-value" style="color: #10b981;">${{ "%.2f"|format(acc.balance) }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">CIBIL Score</div>
+          <div class="info-value" style="color: #3b82f6;">{{ acc.cibil_score }}/900</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Account Status</div>
+          <div class="info-value" style="color: {% if acc.is_frozen %}#ef4444{% else %}#10b981{% endif %};">
+            {% if acc.is_frozen %}Frozen ❄️{% else %}Active ✓{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="section">
+      <div class="section-title">Summary Statistics</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Deposits</div>
+          <div class="stat-value" style="color: #10b981;">
+            ${{ "%.2f"|format(stats.total_inflows) }}
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Withdrawals</div>
+          <div class="stat-value" style="color: #ef4444;">
+            ${{ "%.2f"|format(stats.total_outflows) }}
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Net Flow</div>
+          <div class="stat-value" style="color: {% if stats.total_inflows > stats.total_outflows %}#10b981{% else %}#ef4444{% endif %};">
+            ${{ "%.2f"|format(stats.total_inflows - stats.total_outflows) }}
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Transactions</div>
+          <div class="stat-value">{{ stats.total_txns }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="section">
+      <div class="section-title">Transaction History</div>
+      {% if txns %}
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th style="text-align: right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in txns %}
+            {% set is_credit = t.log_type in ['DEPOSIT', 'DEPOSIT_APPROVED', 'TRANSFER_IN', 'INTEREST'] %}
+            {% set is_debit = t.log_type in ['WITHDRAW', 'TRANSFER_OUT'] %}
+            <tr>
+              <td>{{ t.created_at }}</td>
+              <td>
+                {% if 'DEPOSIT' in t.log_type %}
+                  <span class="badge badge-deposit">{{ t.log_type.replace('_', ' ') }}</span>
+                {% elif 'WITHDRAW' in t.log_type %}
+                  <span class="badge badge-withdraw">{{ t.log_type.replace('_', ' ') }}</span>
+                {% elif 'TRANSFER' in t.log_type %}
+                  <span class="badge badge-transfer">{{ t.log_type.replace('_', ' ') }}</span>
+                {% else %}
+                  <span class="badge badge-transfer">{{ t.log_type.replace('_', ' ') }}</span>
+                {% endif %}
+              </td>
+              <td>{{ t.description[:50] if t.description else '-' }}</td>
+              <td style="text-align: right;">
+                {% if t.amount %}
+                <span class="{% if is_credit %}amount-positive{% elif is_debit %}amount-negative{% endif %}">
+                  {{ '+' if is_credit else '-' if is_debit else '' }}${{ "%.2f"|format(t.amount) }}
+                </span>
+                {% else %}
+                <span style="color: var(--text-muted);">-</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <p>No transactions found</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Active Loans Section -->
+    {% if active_loans %}
+    <div class="section">
+      <div class="section-title">Active Loans</div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Loan ID</th>
+              <th>Product</th>
+              <th>Principal</th>
+              <th>Outstanding</th>
+              <th>EMI Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for loan in active_loans %}
+            <tr>
+              <td><span style="font-family: 'JetBrains Mono';">{{ loan.loan_id[:12] }}</span></td>
+              <td>{{ loan.product_name or 'N/A' }}</td>
+              <td>${{ "%.2f"|format(loan.principal_amount) }}</td>
+              <td>${{ "%.2f"|format(loan.outstanding_balance) }}</td>
+              <td>${{ "%.2f"|format(loan.emi_amount) }}</td>
+              <td>
+                <span class="badge badge-active">{{ loan.status.capitalize() }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- All Loans Section -->
+    {% if all_loans %}
+    <div class="section">
+      <div class="section-title">Complete Loan History</div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Loan ID</th>
+              <th>Product</th>
+              <th>Principal</th>
+              <th>Outstanding</th>
+              <th>EMI Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for loan in all_loans %}
+            <tr>
+              <td><span style="font-family: 'JetBrains Mono';">{{ loan.loan_id[:12] }}</span></td>
+              <td>{{ loan.product_name or 'N/A' }}</td>
+              <td>${{ "%.2f"|format(loan.principal_amount) }}</td>
+              <td>${{ "%.2f"|format(loan.outstanding_balance) }}</td>
+              <td>${{ "%.2f"|format(loan.emi_amount) }}</td>
+              <td>
+                {% if loan.status == 'active' %}
+                  <span class="badge badge-active">{{ loan.status.capitalize() }}</span>
+                {% else %}
+                  <span class="badge badge-closed">{{ loan.status.capitalize() }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Deposit Requests Section -->
+    {% if deposits %}
+    <div class="section">
+      <div class="section-title">Deposit Requests</div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Request ID</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Requested Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for dep in deposits %}
+            <tr>
+              <td><span style="font-family: 'JetBrains Mono';">{{ dep.request_id }}</span></td>
+              <td>${{ "%.2f"|format(dep.amount) }}</td>
+              <td>
+                {% if dep.status == 'pending' %}
+                  <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">Pending</span>
+                {% elif dep.status == 'approved' %}
+                  <span class="badge badge-active">Approved</span>
+                {% else %}
+                  <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #ef4444;">Rejected</span>
+                {% endif %}
+              </td>
+              <td>{{ dep.requested_at.strftime('%Y-%m-%d') if dep.requested_at else 'N/A' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 0.9rem;">
+      <p>📄 Statement Generated: {{ stats.statement_date }}</p>
+      <p style="opacity: 0.7;">This is a secure, personalized document. Handle with care.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

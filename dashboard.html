@@ -1,0 +1,551 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  :root {
+    --card-bg: var(--bg2, #1e293b);
+    --card-border: var(--border, #334155);
+    --text-muted: var(--text3, #94a3b8);
+    --r-lg: 16px;
+    --r-md: 12px;
+    --r-sm: 8px;
+  }
+
+  .dash-page { 
+    background: var(--bg, #0f172a); 
+    min-height: calc(100vh - 64px);
+    font-family: 'Instrument Sans', system-ui, sans-serif;
+    color: var(--text, #f8fafc);
+  }
+
+  /* ── HERO BANNER ── */
+  .dash-banner {
+    background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+    border-bottom: 1px solid var(--card-border);
+    padding: 40px 40px 0;
+    position: relative; 
+    overflow: hidden;
+  }
+  
+  .dash-banner::before {
+    content: '';
+    position: absolute; top: -100px; right: -50px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  
+  .dash-inner { max-width: 1200px; margin: 0 auto; }
+
+  .dash-top {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    flex-wrap: wrap; gap: 24px; margin-bottom: 32px;
+  }
+
+  .user-info { display: flex; flex-direction: column; gap: 8px; }
+  
+  .dash-greeting {
+    font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--text-muted); font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  
+  .online-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+    animation: dotPulse 2s ease infinite;
+  }
+  @keyframes dotPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .dash-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.4rem; font-weight: 800;
+    line-height: 1.1; margin-bottom: 4px;
+  }
+  
+  .dash-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.8rem; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--card-border);
+    padding: 6px 14px; border-radius: 20px;
+  }
+
+  .balance-block { text-align: right; }
+  .balance-label {
+    font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 8px; font-weight: 600;
+  }
+  .balance-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 3rem; font-weight: 800; line-height: 1;
+    background: linear-gradient(135deg, #ffffff, #93c5fd);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .balance-acc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;
+  }
+
+  /* Quick Actions (Banner Bottom) */
+  .quick-strip {
+    display: flex; gap: 12px;
+    padding-bottom: 20px;
+    overflow-x: auto;
+  }
+  
+  .btn-quick {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; font-size: 0.9rem; font-weight: 600;
+    color: var(--text, #fff); background: var(--card-bg);
+    border: 1px solid var(--card-border); border-radius: 8px;
+    cursor: pointer; transition: all 0.2s; text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn-quick:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+  .btn-quick.primary { background: #2563eb; border-color: #3b82f6; }
+  .btn-quick.primary:hover { background: #1d4ed8; }
+
+  /* ── MAIN LAYOUT ── */
+  .dash-body { max-width: 1200px; margin: 0 auto; padding: 40px 40px 80px; }
+  .dash-grid { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: start; }
+  
+  @media(max-width: 900px) { 
+    .dash-grid { grid-template-columns: 1fr; } 
+    .dash-banner { padding: 30px 20px 0; }
+    .dash-body { padding: 30px 20px; }
+    .balance-block { text-align: left; margin-top: 10px; }
+  }
+
+  /* ── ALERTS ── */
+  .frozen-alert {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--r-md); padding: 16px 20px;
+    font-size: 0.9rem; color: #fbbf24; font-weight: 500;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  /* ── ACTION PANEL (DEPOSIT / WITHDRAW) ── */
+  .action-panel {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: var(--r-lg); overflow: hidden; margin-bottom: 32px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
+  
+  .ap-tabs { display: flex; border-bottom: 1px solid var(--card-border); background: rgba(0,0,0,0.2); }
+  .ap-tab {
+    flex: 1; padding: 16px; font-size: 0.9rem; font-weight: 600;
+    color: var(--text-muted); text-align: center; cursor: pointer;
+    border: none; background: transparent; transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+  }
+  .ap-tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .ap-tab.active { color: #3b82f6; border-bottom-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
+
+  .ap-pane { display: none; padding: 30px; animation: fadeIn 0.3s ease; }
+  .ap-pane.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  .form-group { margin-bottom: 20px; }
+  .form-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+  .form-input { 
+    width: 100%; padding: 14px 16px; font-size: 1.1rem;
+    background: rgba(0,0,0,0.2); border: 1px solid var(--card-border);
+    color: white; border-radius: var(--r-md); transition: border-color 0.2s;
+  }
+  .form-input:focus { outline: none; border-color: #3b82f6; }
+  .form-hint { font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; }
+
+  /* Interactive Impact Text */
+  .impact-box {
+    margin-top: 16px; padding: 12px 16px; border-radius: var(--r-sm);
+    background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.3);
+    font-size: 0.9rem; display: flex; align-items: center; gap: 8px;
+  }
+  .impact-text-val { font-weight: bold; color: #10b981; }
+
+  /* ── TRANSACTIONS LIST ── */
+  .txn-card { 
+    background: var(--card-bg); border: 1px solid var(--card-border); 
+    border-radius: var(--r-lg); overflow: hidden; 
+  }
+  .txn-header { 
+    padding: 24px; border-bottom: 1px solid var(--card-border); 
+    display: flex; justify-content: space-between; align-items: center; 
+  }
+  .txn-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; }
+
+  .txn-list { list-style: none; padding: 0; margin: 0; }
+  .txn-item {
+    display: flex; align-items: center; gap: 16px; padding: 16px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.1s;
+  }
+  .txn-item:last-child { border-bottom: none; }
+  .txn-item:hover { background: rgba(255,255,255,0.02); }
+  
+  .txn-ico {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0; background: rgba(255,255,255,0.05);
+  }
+  .txn-ico.in  { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+  .txn-ico.out { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+  
+  .txn-info { flex: 1; min-width: 0; }
+  .txn-type { font-size: 0.9rem; font-weight: 600; text-transform: capitalize; }
+  .txn-date { font-size: 0.8rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+  
+  .txn-amt { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 600; }
+  .txn-amt.credit { color: #10b981; }
+  .txn-amt.debit  { color: #ef4444; }
+
+  /* ── RIGHT SIDEBAR WIDGETS ── */
+  .widget-stack { display: flex; flex-direction: column; gap: 24px; }
+  .w-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--r-lg); padding: 24px; }
+  .w-title { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
+
+  /* CIBIL Meter inside widget */
+  .cibil-num { font-family: 'Syne', sans-serif; font-size: 3rem; font-weight: 800; line-height: 1; margin-bottom: 4px;}
+  .cibil-tag { font-size: 0.9rem; font-weight: 700; margin-bottom: 16px; }
+  .cibil-track { height: 8px; background: rgba(0,0,0,0.3); border-radius: 100px; overflow: hidden; margin-bottom: 8px; }
+  .cibil-fill { height: 100%; border-radius: 100px; transition: width 1s ease; }
+  .cibil-range { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* Account Info Table */
+  .info-grid { display: grid; gap: 16px; }
+  .info-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;}
+  .info-row:last-child { border-bottom: none; padding-bottom: 0;}
+  .info-lbl { font-size: 0.85rem; color: var(--text-muted); }
+  .info-val { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; font-weight: 600; text-align: right;}
+
+  /* CIBIL Tips Accordion */
+  .tips-wrapper { background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.1)); border: 1px solid rgba(59, 130, 246, 0.2); }
+  .impact-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.85rem; }
+  .impact-table th { text-align: left; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-weight: normal; }
+  .impact-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .impact-table tr:last-child td { border-bottom: none; }
+  .text-success { color: #10b981; font-weight: bold; }
+  .text-danger { color: #ef4444; font-weight: bold; }
+
+  /* Danger Zone */
+  .close-zone { background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.3); }
+  .close-zone .w-title { color: #ef4444; }
+
+  .btn { padding: 12px 20px; border-radius: var(--r-sm); font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; transition: all 0.2s; text-decoration: none;}
+  .btn-full { width: 100%; display: block; text-align: center; }
+  .btn-success { background: #10b981; color: white; }
+  .btn-success:hover { background: #059669; }
+  .btn-danger { background: #ef4444; color: white; }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text); }
+  .btn-outline:hover { background: rgba(255,255,255,0.05); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="dash-page">
+
+  <div class="dash-banner">
+    <div class="dash-inner">
+      <div class="dash-top">
+        <div class="user-info">
+          <div class="dash-greeting">
+            <div class="online-dot"></div>
+            Online & Secure
+          </div>
+          <div class="dash-name">{{ acc.account_holder }}</div>
+          <div class="dash-chips">
+            <span class="chip">🏦 {{ acc.account_type.replace('Account', '') }}</span>
+            <span class="chip">📱 {{ acc.phone_number }}</span>
+            {% if acc.is_frozen %}
+              <span class="chip" style="color: #fbbf24; border-color: rgba(245,158,11,0.3)">❄️ Frozen</span>
+            {% else %}
+              <span class="chip" style="color: #10b981; border-color: rgba(16,185,129,0.3)">● Active</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="balance-block">
+          <div class="balance-label">Available Balance</div>
+          <div class="balance-amount">${{ "%.2f"|format(acc.balance) }}</div>
+          <div class="balance-acc">A/C No. {{ fmt_acc(acc.account_number) }}</div>
+        </div>
+      </div>
+
+      <div class="quick-strip">
+        <button class="btn-quick primary" onclick="switchTab('deposit', this)">💰 Make a Deposit</button>
+        <button class="btn-quick" onclick="switchTab('withdraw', this)">💸 Make a Withdrawal</button>
+        <a href="{{ url_for('transfer') }}" class="btn-quick">📲 Transfer Funds</a>
+        <a href="{{ url_for('my_deposit_requests') }}" class="btn-quick">📋 Deposit Requests</a>
+        <a href="{{ url_for('cibil') }}" class="btn-quick">📊 View CIBIL Report</a>
+        <a href="{{ url_for('statement_preview') }}" class="btn-quick">📊 Bank Statement</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-body">
+    {% if acc.is_frozen %}
+    <div class="frozen-alert">
+      ⚠️ <strong>Action Required:</strong> Your account is currently frozen. Deposits and withdrawals are suspended. Please contact administration.
+    </div>
+    {% endif %}
+
+    <div class="dash-grid">
+      <div>
+
+        <div class="action-panel">
+          <div class="ap-tabs">
+            <button class="ap-tab active" id="tab-deposit" onclick="switchTab('deposit',this)">💰 Quick Deposit</button>
+            <button class="ap-tab" id="tab-withdraw" onclick="switchTab('withdraw',this)">💸 Quick Withdraw</button>
+          </div>
+
+          <div class="ap-pane active" id="pane-deposit">
+            <form method="POST" action="{{ url_for('deposit') }}">
+              <div class="form-group">
+                <label class="form-label">Deposit Amount (USD)</label>
+                <input class="form-input" id="deposit-amount" type="number" name="amount" placeholder="0.00" min="1" step="0.01" required />
+                <div class="impact-box" id="deposit-impact-box" style="display:none;">
+                  <span>📈 CIBIL Impact Estimate:</span>
+                  <span class="impact-text-val" id="deposit-impact-text">+0 Points</span>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-success btn-full" {% if acc.is_frozen %}disabled style="opacity:0.5; cursor:not-allowed;"{% endif %}>
+                Submit Deposit Request
+              </button>
+            </form>
+          </div>
+
+          <div class="ap-pane" id="pane-withdraw">
+            <form method="POST" action="{{ url_for('withdraw') }}">
+              <div class="form-group">
+                <label class="form-label">Withdrawal Amount (USD)</label>
+                <input class="form-input" id="withdraw-amount" type="number" name="amount" placeholder="0.00" min="1" step="0.01" required />
+
+                <div class="impact-box" id="withdraw-impact-box" style="display:none; background:rgba(239,68,68,0.05); border-color:rgba(239,68,68,0.3);">
+                  <span>📉 CIBIL Impact Estimate:</span>
+                  <span class="impact-text-val" id="withdraw-impact-text" style="color:#ef4444;">-0 Points</span>
+                </div>
+
+                {% if acc.account_type == 'CheckingAccount' %}
+                <div class="form-hint">Overdraft up to <strong>${{ "%.2f"|format(acc.overdraft_limit) }}</strong> available.</div>
+                {% endif %}
+              </div>
+              <button type="submit" class="btn btn-danger btn-full" {% if acc.is_frozen %}disabled style="opacity:0.5; cursor:not-allowed;"{% endif %}>
+                Confirm Withdrawal
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="txn-card">
+          <div class="txn-header">
+            <div class="txn-title">Recent Transactions</div>
+            <a href="{{ url_for('transactions') }}" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem;">View all</a>
+          </div>
+          {% if txns %}
+          <ul class="txn-list">
+            {% for t in txns %}
+            {% set is_credit = t.log_type in ['DEPOSIT','DEPOSIT_APPROVED','TRANSFER_IN','INTEREST'] %}
+            {% set is_debit  = t.log_type in ['WITHDRAW','TRANSFER_OUT'] %}
+            {% set icons = {'DEPOSIT':'💰','WITHDRAW':'💸','TRANSFER_OUT':'📤','TRANSFER_IN':'📥','INTEREST':'📈','ACCOUNT_CREATED':'🎉','ACCOUNT_CLOSED':'🗑️','ADMIN_FREEZE':'❄️','PIN_RESET':'🔐','SECURITY_ALERT':'⚠️'} %}
+
+            <li class="txn-item">
+              <div class="txn-ico {{ 'in' if is_credit else 'out' if is_debit else '' }}">
+                {{ icons.get(t.log_type, '💳') }}
+              </div>
+              <div class="txn-info">
+                <div class="txn-type">{{ t.log_type.replace('_',' ').lower() }}</div>
+                <div class="txn-date">{{ t.created_at }}</div>
+              </div>
+              {% if t.amount %}
+              <div class="txn-amt {{ 'credit' if is_credit else 'debit' if is_debit else '' }}">
+                {{ '+' if is_credit else '-' if is_debit else '' }}${{ "%.2f"|format(t.amount) }}
+              </div>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div style="padding: 60px 40px; text-align: center; color: var(--text-muted);">
+            <div style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.5;">📭</div>
+            <div>No transactions yet. Start by making a deposit!</div>
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <div class="widget-stack">
+
+        <div class="w-card">
+          <div class="w-title">Live CIBIL Score</div>
+          {% set score = acc.cibil_score %}
+          {% set pct = (((score - 300) / 600) * 100)|round|int %}
+          {% if score >= 750 %}{% set c='#10b981'%}{% set lbl='Excellent'%}
+          {% elif score >= 600 %}{% set c='#fbbf24'%}{% set lbl='Good'%}
+          {% else %}{% set c='#ef4444'%}{% set lbl='Needs Improvement'%}{% endif %}
+
+          <div class="cibil-num" style="color:{{ c }}">{{ score }}</div>
+          <div class="cibil-tag" style="color:{{ c }}">{{ lbl }}</div>
+
+          <div class="cibil-track">
+            <div class="cibil-fill" style="width:{{ pct }}%; background:{{ c }}"></div>
+          </div>
+          <div class="cibil-range"><span>300 (Min)</span><span>900 (Max)</span></div>
+        </div>
+
+        <div class="w-card tips-wrapper">
+            <div class="w-title" style="color: #93c5fd;">💡 Smart CIBIL Tips</div>
+            <p style="font-size: 0.85rem; color: var(--text); margin-bottom: 16px;">
+                Your balance affects your credit score. Larger deposits improve it, while heavy withdrawals drop it.
+            </p>
+
+            <div style="font-size: 0.9rem; margin-bottom: 8px;"><strong>Deposit Impact Estimates:</strong></div>
+            <table class="impact-table">
+                <tr>
+                    <td>${{ "%.0f"|format((acc.balance | float) * 0.10) }} (10%)</td>
+                    <td class="text-success">+10 pts</td>
+                </tr>
+                <tr>
+                    <td>${{ "%.0f"|format((acc.balance | float) * 0.50) }} (50%)</td>
+                    <td class="text-success">+20 pts</td>
+                </tr>
+                <tr>
+                    <td>${{ "%.0f"|format(acc.balance | float) }} (100%)</td>
+                    <td class="text-success">+25 pts ⭐</td>
+                </tr>
+            </table>
+
+            <div style="font-size: 0.9rem; margin-top: 16px; margin-bottom: 8px;"><strong>Withdrawal Impact Estimates:</strong></div>
+            <table class="impact-table">
+                <tr>
+                    <td>${{ "%.0f"|format((acc.balance | float) * 0.25) }} (25%)</td>
+                    <td class="text-danger">-20 pts</td>
+                </tr>
+                <tr>
+                    <td>${{ "%.0f"|format((acc.balance | float) * 0.75) }} (75%+)</td>
+                    <td class="text-danger">-30 pts ⚠️</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="w-card">
+          <div class="w-title">Account Information</div>
+          <div class="info-grid">
+            <div class="info-row">
+              <span class="info-lbl">Account Type</span>
+              <span class="info-val">{{ acc.account_type.replace('Account', '') }}</span>
+            </div>
+
+            {% if acc.account_type == 'SavingsAccount' %}
+            <div class="info-row">
+              <span class="info-lbl">Interest Rate</span>
+              <span class="info-val" style="color: #10b981;">{{ (acc.interest_rate * 100)|round(1) }}% p.a.</span>
+            </div>
+            {% else %}
+            <div class="info-row">
+              <span class="info-lbl">Overdraft Limit</span>
+              <span class="info-val" style="color: #3b82f6;">${{ "%.2f"|format(acc.overdraft_limit) }}</span>
+            </div>
+            {% endif %}
+
+            <div class="info-row">
+              <span class="info-lbl">Open Date</span>
+              <span class="info-val" style="font-weight: normal;">{{ acc.created_at.strftime('%Y-%m-%d') if acc.created_at else 'N/A' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-card close-zone">
+          <div class="w-title">⚠️ Close Account</div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+            Permanently deletes your account. You must have a $0 balance to perform this action.
+          </p>
+          <form method="POST" action="{{ url_for('close_account') }}" onsubmit="return confirm('Are you absolutely sure you want to close your account? This action cannot be undone.')">
+            <input class="form-input" type="text" name="confirm" placeholder="Type CLOSE to confirm" style="font-size: 0.85rem; margin-bottom: 12px; border-color: rgba(239,68,68,0.3);" required />
+            <button type="submit" class="btn btn-danger btn-full">Permanently Delete</button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Tab Switching Logic
+  function switchTab(name, btn) {
+    document.querySelectorAll('.ap-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.ap-pane').forEach(p => p.classList.remove('active'));
+
+    if(document.getElementById('tab-'+name)) document.getElementById('tab-'+name).classList.add('active');
+    if(document.getElementById('pane-'+name)) document.getElementById('pane-'+name).classList.add('active');
+  }
+
+  // Real-time CIBIL Impact Estimator
+  const currentBalance = {{ acc.balance | float }};
+  const safeBalance = currentBalance > 0 ? currentBalance : 1; // Prevent division by zero
+
+  // Deposit Estimator
+  const depositInput = document.getElementById('deposit-amount');
+  const depositBox = document.getElementById('deposit-impact-box');
+  const depositText = document.getElementById('deposit-impact-text');
+
+  if (depositInput) {
+    depositInput.addEventListener('input', function() {
+      const amount = parseFloat(this.value) || 0;
+      if (amount <= 0) {
+          depositBox.style.display = 'none';
+          return;
+      }
+
+      depositBox.style.display = 'flex';
+      const percentage = (amount / safeBalance) * 100;
+      let pts = 3;
+
+      if (percentage >= 100) pts = 25;
+      else if (percentage >= 50) pts = 20;
+      else if (percentage >= 25) pts = 15;
+      else if (percentage >= 10) pts = 10;
+      else if (percentage >= 5) pts = 7;
+      else if (percentage >= 1) pts = 5;
+
+      depositText.innerText = `+${pts} Points`;
+    });
+  }
+
+  // Withdrawal Estimator
+  const withdrawInput = document.getElementById('withdraw-amount');
+  const withdrawBox = document.getElementById('withdraw-impact-box');
+  const withdrawText = document.getElementById('withdraw-impact-text');
+
+  if (withdrawInput) {
+    withdrawInput.addEventListener('input', function() {
+      const amount = parseFloat(this.value) || 0;
+      if (amount <= 0) {
+          withdrawBox.style.display = 'none';
+          return;
+      }
+
+      withdrawBox.style.display = 'flex';
+      const percentage = (amount / safeBalance) * 100;
+      let pts = 5; // Base penalty
+
+      if (percentage >= 75) pts = 30;
+      else if (percentage >= 50) pts = 25;
+      else if (percentage >= 25) pts = 20;
+      else if (percentage >= 10) pts = 15;
+      else if (percentage >= 5) pts = 10;
+
+      withdrawText.innerText = `-${pts} Points`;
+    });
+  }
+</script>
+{% endblock %}

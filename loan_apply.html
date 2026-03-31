@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% block title %}Apply for {{ product.name }} — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  .apply-page { max-width: 700px; margin: 0 auto; padding: 40px 24px 80px; }
+  
+  .apply-header {
+    margin-bottom: 32px;
+  }
+  .apply-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+  }
+  .apply-sub { font-size: 0.9rem; color: var(--text2); }
+
+  .apply-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+
+  .product-summary {
+    background: linear-gradient(135deg, rgba(124,106,247,0.08), rgba(124,106,247,0.02));
+    border: 1px solid rgba(124,106,247,0.2);
+    border-radius: var(--r);
+    padding: 20px;
+    margin-bottom: 28px;
+  }
+  .ps-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .ps-desc { font-size: 0.82rem; color: var(--text2); margin-bottom: 14px; }
+  .ps-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .ps-item { font-size: 0.78rem; }
+  .ps-label { color: var(--text3); margin-bottom: 2px; }
+  .ps-value { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+
+  /* EMI Calculator Panel */
+  .calc-panel {
+    background: rgba(34,197,94,0.05);
+    border: 1px solid rgba(34,197,94,0.2);
+    border-radius: var(--r);
+    padding: 20px;
+    margin-top: 28px;
+    display: none;
+  }
+  .calc-panel.show { display: block; }
+  .calc-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .calc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 520px) { .calc-grid { grid-template-columns: 1fr; } }
+  .calc-box {
+    background: rgba(255,255,255,0.04);
+    padding: 14px;
+    border-radius: var(--r-sm);
+  }
+  .calc-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+  .calc-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--green);
+  }
+  .calc-discount {
+    background: rgba(34,197,94,0.15);
+    color: var(--green);
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 100px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .slider-wrapper {
+    margin-top: 12px;
+  }
+  .slider-input {
+    width: 100%;
+    height: 6px;
+    border-radius: 100px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    outline: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+  .slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    cursor: pointer;
+  }
+  .slider-input::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    cursor: pointer;
+    border: none;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="apply-page">
+  <a href="{{ url_for('loans_marketplace') }}" class="btn btn-ghost" style="padding-left: 0; margin-bottom: 16px;">← Back to Loans</a>
+
+  <div class="apply-header">
+    <h1 class="apply-title">Apply for Loan</h1>
+    <p class="apply-sub">Fill out the form below to submit your application</p>
+  </div>
+
+  <div class="product-summary">
+    <div class="ps-name">{{ product.name }}</div>
+    <p class="ps-desc">{{ product.description }}</p>
+    <div class="ps-grid">
+      <div class="ps-item">
+        <div class="ps-label">Amount Range</div>
+        <div class="ps-value">${{ "{:,.0f}".format(product.min_amount) }} – ${{ "{:,.0f}".format(product.max_amount) }}</div>
+      </div>
+      <div class="ps-item">
+        <div class="ps-label">Tenure Range</div>
+        <div class="ps-value">{{ product.min_tenure_months }}–{{ product.max_tenure_months }} months</div>
+      </div>
+      <div class="ps-item">
+        <div class="ps-label">Base Interest Rate</div>
+        <div class="ps-value">{{ "%.2f"|format(product.interest_rate * 100) }}%</div>
+      </div>
+      <div class="ps-item">
+        <div class="ps-label">Min CIBIL Required</div>
+        <div class="ps-value" style="color: {{ 'var(--green)' if acc.cibil_score >= product.min_cibil_score else 'var(--red)' }}">
+          {{ product.min_cibil_score }}+ (You: {{ acc.cibil_score }})
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="apply-card">
+    <form method="POST" id="apply-form">
+      <div class="form-group">
+        <label class="form-label">Loan Amount (USD)</label>
+        <input class="form-input" type="number" name="amount" id="amount-input"
+          min="{{ product.min_amount }}" max="{{ product.max_amount }}" step="100"
+          value="{{ product.min_amount }}" required oninput="updateCalc()" />
+        <div class="form-hint">
+          Min: ${{ "{:,.0f}".format(product.min_amount) }} · Max: ${{ "{:,.0f}".format(product.max_amount) }}
+        </div>
+        <div class="slider-wrapper">
+          <input type="range" class="slider-input" id="amount-slider"
+            min="{{ product.min_amount }}" max="{{ product.max_amount }}" step="100"
+            value="{{ product.min_amount }}" oninput="document.getElementById('amount-input').value=this.value; updateCalc()" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Repayment Tenure (Months)</label>
+        <input class="form-input" type="number" name="tenure" id="tenure-input"
+          min="{{ product.min_tenure_months }}" max="{{ product.max_tenure_months }}"
+          value="{{ product.min_tenure_months }}" required oninput="updateCalc()" />
+        <div class="form-hint">
+          Min: {{ product.min_tenure_months }} months · Max: {{ product.max_tenure_months }} months
+        </div>
+        <div class="slider-wrapper">
+          <input type="range" class="slider-input" id="tenure-slider"
+            min="{{ product.min_tenure_months }}" max="{{ product.max_tenure_months }}"
+            value="{{ product.min_tenure_months }}" oninput="document.getElementById('tenure-input').value=this.value; updateCalc()" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Purpose of Loan</label>
+        <textarea class="form-input" name="purpose" rows="3"
+          placeholder="E.g., Home renovation, education, business expansion..." style="resize: vertical; font-family: 'Instrument Sans', sans-serif;"></textarea>
+      </div>
+
+      <!-- EMI Calculator Result -->
+      <div class="calc-panel" id="calc-panel">
+        <div class="calc-title">
+          💰 Your Personalized EMI Breakdown
+        </div>
+        <div class="calc-grid">
+          <div class="calc-box">
+            <div class="calc-label">Monthly EMI</div>
+            <div class="calc-value" id="calc-emi">—</div>
+          </div>
+          <div class="calc-box">
+            <div class="calc-label">Total Payable</div>
+            <div class="calc-value" id="calc-total" style="color: var(--accent2); font-size: 1.2rem;">—</div>
+          </div>
+          <div class="calc-box">
+            <div class="calc-label">Total Interest</div>
+            <div class="calc-value" id="calc-interest" style="color: var(--gold); font-size: 1.2rem;">—</div>
+          </div>
+          <div class="calc-box">
+            <div class="calc-label">Your Interest Rate</div>
+            <div class="calc-value" id="calc-rate" style="font-size: 1.2rem;">—</div>
+          </div>
+        </div>
+        <div style="margin-top: 12px; font-size: 0.78rem; color: var(--text3); text-align: center;" id="calc-message"></div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full btn-lg mt-24" id="submit-btn">
+        Submit Application →
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const productId = {{ product.id }};
+  let calcTimeout = null;
+
+  // Sync sliders
+  document.getElementById('amount-slider').addEventListener('input', function() {
+    document.getElementById('amount-input').value = this.value;
+    updateCalc();
+  });
+  document.getElementById('tenure-slider').addEventListener('input', function() {
+    document.getElementById('tenure-input').value = this.value;
+    updateCalc();
+  });
+
+  async function updateCalc() {
+    clearTimeout(calcTimeout);
+    calcTimeout = setTimeout(async () => {
+      const amount = parseFloat(document.getElementById('amount-input').value) || 0;
+      const tenure = parseInt(document.getElementById('tenure-input').value) || 0;
+
+      if (!amount || !tenure) return;
+
+      try {
+        const res = await fetch('/api/loan/calculate-emi', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({product_id: productId, amount, tenure})
+        });
+        const data = await res.json();
+
+        if (data.success && data.eligible) {
+          document.getElementById('calc-panel').classList.add('show');
+          document.getElementById('calc-emi').innerHTML = `$${data.emi.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+          document.getElementById('calc-total').innerHTML = `$${data.total_payable.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+          document.getElementById('calc-interest').innerHTML = `$${data.total_interest.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+          document.getElementById('calc-rate').innerHTML = `${data.interest_rate}%` +
+            (data.discount > 0 ? `<span class="calc-discount">-${data.discount.toFixed(1)}%</span>` : '');
+          document.getElementById('calc-message').textContent =
+            data.discount > 0 ? `🎉 Your excellent CIBIL score earned you a ${data.discount.toFixed(1)}% discount!` :
+            '✓ You are eligible for this loan';
+          document.getElementById('submit-btn').disabled = false;
+        } else {
+          document.getElementById('calc-panel').classList.remove('show');
+          document.getElementById('submit-btn').disabled = true;
+          if (data.message) alert(data.message);
+        }
+      } catch (e) {
+        console.error('Calc error:', e);
+      }
+    }, 300);
+  }
+
+  // Initial calc
+  updateCalc();
+</script>
+{% endblock %}

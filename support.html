@@ -1,0 +1,553 @@
+{% extends "base.html" %}
+{% block title %}Live Support — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  body { overflow: hidden; }
+  .support-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    height: calc(100vh - 64px);
+    overflow: hidden;
+  }
+
+  /* ── LEFT PANEL: SESSION LIST ── */
+  .sessions-panel {
+    background: #0a0a10;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .sp-header {
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .sp-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.88rem; font-weight: 700;
+    margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sp-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  }
+  .sp-stat {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px; padding: 8px;
+    text-align: center;
+  }
+  .sp-stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem; font-weight: 800;
+    line-height: 1;
+  }
+  .sp-stat-num.waiting { color: #f59e0b; }
+  .sp-stat-num.active  { color: #22c55e; }
+  .sp-stat-num.bot     { color: #7c6af7; }
+  .sp-stat-lbl { font-size: 0.62rem; color: #4a4860; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3px; }
+
+  .sessions-list { flex: 1; overflow-y: auto; }
+  .sessions-list::-webkit-scrollbar { width: 3px; }
+  .sessions-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 100px; }
+
+  .session-item {
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .session-item:hover { background: rgba(255,255,255,0.03); }
+  .session-item.active-chat { background: rgba(124,106,247,0.1); border-left: 2px solid #7c6af7; }
+  .si-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .si-name { font-size: 0.83rem; font-weight: 600; color: #f0eff4; }
+  .si-time { font-size: 0.67rem; color: #4a4860; font-family: 'JetBrains Mono', monospace; }
+  .si-bottom { display: flex; align-items: center; justify-content: space-between; }
+  .si-acc { font-size: 0.7rem; color: #5f5e72; font-family: 'JetBrains Mono', monospace; }
+  .si-badge {
+    font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 100px;
+  }
+  .si-badge.waiting { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+  .si-badge.active  { background: rgba(34,197,94,0.12);  color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+  .si-badge.bot     { background: rgba(124,106,247,0.12); color: #a99bff; border: 1px solid rgba(124,106,247,0.2); }
+  .unread-dot {
+    position: absolute; top: 12px; right: 12px;
+    min-width: 18px; height: 18px; border-radius: 100px;
+    background: #ef4444; color: #fff;
+    font-size: 0.65rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 4px;
+  }
+
+  .empty-list {
+    padding: 40px 20px; text-align: center;
+    color: #4a4860; font-size: 0.82rem;
+  }
+  .empty-list .el-icon { font-size: 2rem; margin-bottom: 10px; }
+
+  /* ── RIGHT PANEL: CHAT VIEW ── */
+  .chat-panel {
+    display: flex; flex-direction: column;
+    background: #08080a;
+    overflow: hidden;
+  }
+
+  /* Empty state */
+  .chat-empty {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: #4a4860; text-align: center; padding: 40px;
+  }
+  .chat-empty .ce-icon { font-size: 4rem; margin-bottom: 16px; opacity: 0.4; }
+  .chat-empty h3 { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: #5f5e72; }
+  .chat-empty p  { font-size: 0.83rem; line-height: 1.6; }
+
+  /* Chat header */
+  .cp-header {
+    background: #0c0b18;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; gap: 12px;
+  }
+  .cp-header-info { display: flex; align-items: center; gap: 12px; }
+  .cp-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #7c6af7, #4a3fd4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; flex-shrink: 0;
+  }
+  .cp-name { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; }
+  .cp-sub  { font-size: 0.72rem; color: #5f5e72; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .cp-actions { display: flex; gap: 8px; }
+
+  /* Messages */
+  .cp-messages {
+    flex: 1; overflow-y: auto;
+    padding: 20px 24px;
+    display: flex; flex-direction: column; gap: 12px;
+    scroll-behavior: smooth;
+  }
+  .cp-messages::-webkit-scrollbar { width: 4px; }
+  .cp-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 100px; }
+
+  .a-msg-row { display: flex; gap: 10px; align-items: flex-end; animation: msgIn 0.3s ease; }
+  @keyframes msgIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .a-msg-row.customer { flex-direction: row-reverse; }
+  .a-msg-row.system, .a-msg-row.rating { justify-content: center; }
+  .a-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; flex-shrink: 0;
+  }
+  .a-avatar.customer { background: linear-gradient(135deg,#7c6af7,#4a3fd4); }
+  .a-avatar.bot      { background: rgba(124,106,247,0.15); border:1px solid rgba(124,106,247,0.25); }
+  .a-avatar.agent    { background: linear-gradient(135deg,#065f46,#16a34a); }
+
+  .a-bubble {
+    max-width: 70%;
+    padding: 11px 15px;
+    border-radius: 14px;
+    font-size: 0.83rem; line-height: 1.65; word-break: break-word;
+  }
+  .a-bubble.customer { background: rgba(124,106,247,0.15); border:1px solid rgba(124,106,247,0.2); color:#f0eff4; border-bottom-right-radius:4px; }
+  .a-bubble.bot      { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); color:#a09fb5; border-bottom-left-radius:4px; }
+  .a-bubble.agent    { background: rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); color:#f0eff4; border-bottom-left-radius:4px; }
+  .a-bubble.system   { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); color:#4a4860; font-size:0.74rem; text-align:center; padding:6px 14px; border-radius:100px; max-width:85%; }
+  .a-bubble strong   { color: #a99bff; font-weight: 700; }
+  .a-time { font-size: 0.65rem; color: #4a4860; margin-top: 3px; display:block; }
+
+  /* Input area */
+  .cp-input-area {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    background: #0a0a10;
+    flex-shrink: 0;
+  }
+  .cp-input-top {
+    padding: 10px 16px 6px;
+    display: flex; gap: 8px; align-items: flex-end;
+  }
+  .cp-textarea {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: #f0eff4;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.84rem;
+    resize: none; outline: none;
+    max-height: 120px; min-height: 42px; line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+  .cp-textarea::placeholder { color: #4a4860; }
+  .cp-textarea:focus { border-color: rgba(124,106,247,0.4); }
+  .cp-send {
+    width: 40px; height: 40px;
+    background: #7c6af7; border: none; border-radius: 10px;
+    color: #fff; font-size: 1rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .cp-send:hover { background: #4a3fd4; }
+
+  /* Canned responses */
+  .cp-canned {
+    padding: 8px 16px 10px;
+    display: flex; flex-wrap: wrap; gap: 5px;
+  }
+  .canned-chip {
+    font-size: 0.72rem; font-weight: 500;
+    color: #7c6af7;
+    background: rgba(124,106,247,0.06);
+    border: 1px solid rgba(124,106,247,0.18);
+    padding: 4px 10px; border-radius: 100px;
+    cursor: pointer; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .canned-chip:hover { background: rgba(124,106,247,0.14); border-color: rgba(124,106,247,0.35); }
+
+  /* Notification toast */
+  .notif-toast {
+    position: fixed; top: 80px; right: 20px;
+    background: #13131f;
+    border: 1px solid rgba(124,106,247,0.3);
+    border-radius: 12px; padding: 14px 18px;
+    font-size: 0.83rem; color: #f0eff4;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 600;
+    transform: translateX(120%);
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    max-width: 300px;
+  }
+  .notif-toast.show { transform: translateX(0); }
+  .notif-toast .nt-name { font-weight: 700; color: #a99bff; }
+
+  /* Agent header nav override */
+  .support-nav-badge {
+    background: #ef4444; color: #fff;
+    font-size: 0.65rem; font-weight: 700;
+    padding: 2px 6px; border-radius: 100px;
+    margin-left: 6px;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="support-layout">
+
+  <!-- LEFT: SESSION LIST -->
+  <div class="sessions-panel">
+    <div class="sp-header">
+      <div class="sp-title">
+        Live Conversations
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-ghost btn-sm" style="font-size:0.7rem">← Admin</a>
+      </div>
+      <div class="sp-stats">
+        <div class="sp-stat">
+          <div class="sp-stat-num waiting" id="stat-waiting">0</div>
+          <div class="sp-stat-lbl">Waiting</div>
+        </div>
+        <div class="sp-stat">
+          <div class="sp-stat-num active" id="stat-active">0</div>
+          <div class="sp-stat-lbl">Active</div>
+        </div>
+        <div class="sp-stat">
+          <div class="sp-stat-num bot" id="stat-bot">0</div>
+          <div class="sp-stat-lbl">Bot</div>
+        </div>
+      </div>
+    </div>
+    <div class="sessions-list" id="sessions-list">
+      <div class="empty-list">
+        <div class="el-icon">💬</div>
+        <div>No active conversations</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: CHAT VIEW -->
+  <div class="chat-panel" id="chat-panel">
+    <div class="chat-empty" id="chat-empty">
+      <div class="ce-icon">🎧</div>
+      <h3>Support Console</h3>
+      <p>Select a conversation from the left panel to view and respond.<br><br>
+      Waiting chats are highlighted in amber — click to take them!</p>
+    </div>
+
+    <!-- Active chat (hidden until selected) -->
+    <div id="active-chat" style="display:none; flex-direction:column; height:100%">
+      <div class="cp-header">
+        <div class="cp-header-info">
+          <div class="cp-avatar" id="cp-avatar">👤</div>
+          <div>
+            <div class="cp-name" id="cp-name">—</div>
+            <div class="cp-sub" id="cp-sub">—</div>
+          </div>
+        </div>
+        <div class="cp-actions">
+          <button class="btn btn-success btn-sm" id="btn-take" onclick="takeChat()" style="display:none">
+            🎧 Take Chat
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="closeChat()">✅ Resolve</button>
+        </div>
+      </div>
+
+      <div class="cp-messages" id="cp-messages"></div>
+
+      <!-- Canned quick inserts -->
+      <div class="cp-canned" id="cp-canned"></div>
+
+      <!-- Input -->
+      <div class="cp-input-area">
+        <div class="cp-input-top">
+          <textarea class="cp-textarea" id="cp-input"
+            placeholder="Type a reply... (Enter to send, Shift+Enter for newline)"
+            rows="1" onkeydown="handleAgentKey(event)" oninput="agentResize(this)"></textarea>
+          <button class="cp-send" onclick="agentSend()">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notification toast -->
+<div class="notif-toast" id="notif-toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  SUPPORT CONSOLE JS
+// ═══════════════════════════════════════════════════════
+let activeToken  = null;
+let lastAgentId  = 0;
+let sessionsData = {};
+let pollTimer    = null;
+let statsPoll    = null;
+let seenTokens   = new Set();
+
+const canned = {{ canned | tojson }};
+
+// ── Init ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  renderCannedChips();
+  pollSessions();
+  pollStats();
+  pollTimer  = setInterval(pollSessions, 3000);
+  statsPoll  = setInterval(pollStats, 5000);
+});
+
+// ── Stats ──────────────────────────────────────────────
+async function pollStats() {
+  try {
+    const res  = await fetch('/api/support/stats');
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('stat-waiting').textContent = data.waiting;
+      document.getElementById('stat-active').textContent  = data.active;
+      document.getElementById('stat-bot').textContent     = data.bot;
+    }
+  } catch(e) {}
+}
+
+// ── Sessions list ──────────────────────────────────────
+async function pollSessions() {
+  try {
+    const res  = await fetch('/api/support/sessions');
+    const data = await res.json();
+    if (!data.success) return;
+
+    const list = document.getElementById('sessions-list');
+
+    // Notify new waiting chats
+    data.sessions.forEach(s => {
+      if (s.status === 'waiting' && !seenTokens.has(s.session_token)) {
+        seenTokens.add(s.session_token);
+        showNotif(s.customer_name, 'Waiting for agent');
+      }
+      sessionsData[s.session_token] = s;
+    });
+
+    if (!data.sessions.length) {
+      list.innerHTML = `<div class="empty-list"><div class="el-icon">💬</div><div>No active conversations</div></div>`;
+      return;
+    }
+
+    list.innerHTML = data.sessions.map(s => `
+      <div class="session-item ${s.session_token === activeToken ? 'active-chat' : ''}"
+           onclick="openSession('${s.session_token}')">
+        <div class="si-top">
+          <div class="si-name">${s.customer_name}</div>
+          <div class="si-time">${formatTime(s.updated_at)}</div>
+        </div>
+        <div class="si-bottom">
+          <div class="si-acc">${s.account_number ? s.account_number.replace(/(.{4})/g,'$1 ').trim() : 'Guest'}</div>
+          <span class="si-badge ${s.status}">${s.status === 'waiting' ? '⏳ Waiting' : s.status === 'active' ? '🎧 Live' : '🤖 Bot'}</span>
+        </div>
+        ${s.unread_count > 0 ? `<div class="unread-dot">${s.unread_count}</div>` : ''}
+      </div>`).join('');
+
+    // Auto-poll active chat messages
+    if (activeToken) {
+      await pollActiveChat();
+    }
+  } catch(e) {}
+}
+
+// ── Open session ───────────────────────────────────────
+async function openSession(token) {
+  activeToken = token;
+  lastAgentId = 0;
+  document.getElementById('chat-empty').style.display  = 'none';
+  document.getElementById('active-chat').style.display = 'flex';
+
+  const s = sessionsData[token] || {};
+  document.getElementById('cp-name').textContent = s.customer_name || 'Customer';
+  document.getElementById('cp-sub').textContent  = s.account_number
+    ? s.account_number.replace(/(.{4})/g,'$1 ').trim() + ' · ' + s.status
+    : 'Guest · ' + (s.status || 'unknown');
+  document.getElementById('cp-avatar').textContent =
+    s.status === 'waiting' ? '⏳' : s.status === 'active' ? '👤' : '🤖';
+
+  // Show Take button for waiting chats
+  const takeBtn = document.getElementById('btn-take');
+  takeBtn.style.display = s.status === 'waiting' ? 'inline-flex' : 'none';
+
+  document.getElementById('cp-messages').innerHTML = '';
+  await pollActiveChat();
+  pollSessions(); // refresh list
+}
+
+async function pollActiveChat() {
+  if (!activeToken) return;
+  try {
+    const res  = await fetch(`/api/support/messages/${activeToken}?since_id=${lastAgentId}`);
+    const data = await res.json();
+    if (data.success && data.messages.length > 0) {
+      data.messages.forEach(appendAgentMsg);
+      lastAgentId = data.messages[data.messages.length-1].id;
+      scrollAgent();
+    }
+    // Update take button if status changed
+    if (data.session) {
+      const takeBtn = document.getElementById('btn-take');
+      takeBtn.style.display = data.session.status === 'waiting' ? 'inline-flex' : 'none';
+    }
+  } catch(e) {}
+}
+
+function appendAgentMsg(msg) {
+  const container = document.getElementById('cp-messages');
+  const isSys = msg.sender_type === 'system' || msg.sender_type === 'rating';
+  const row = document.createElement('div');
+  row.className = `a-msg-row ${msg.sender_type}`;
+  const avatarMap = {customer:'👤', bot:'🤖', agent:'🎧'};
+  if (isSys) {
+    row.innerHTML = `<div class="a-bubble system">${renderMd(msg.message)}</div>`;
+  } else {
+    const avatar = !['customer'].includes(msg.sender_type)
+      ? `<div class="a-avatar ${msg.sender_type}">${avatarMap[msg.sender_type]||'?'}</div>` : '';
+    row.innerHTML = `
+      ${avatar}
+      <div>
+        <div class="a-bubble ${msg.sender_type}">${renderMd(msg.message)}</div>
+        <span class="a-time">${msg.sender_name} · ${formatTime(msg.created_at)}</span>
+      </div>`;
+  }
+  container.appendChild(row);
+}
+
+function scrollAgent() {
+  const msgs = document.getElementById('cp-messages');
+  setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 50);
+}
+
+// ── Agent actions ──────────────────────────────────────
+async function takeChat() {
+  if (!activeToken) return;
+  await fetch(`/api/support/take/${activeToken}`, {method:'POST'});
+  document.getElementById('btn-take').style.display = 'none';
+  await pollActiveChat();
+  pollSessions();
+}
+
+async function closeChat() {
+  if (!activeToken || !confirm('Mark this chat as resolved?')) return;
+  await fetch(`/api/support/close/${activeToken}`, {method:'POST'});
+  await pollActiveChat();
+  pollSessions();
+  activeToken = null;
+  document.getElementById('chat-empty').style.display  = 'flex';
+  document.getElementById('active-chat').style.display = 'none';
+}
+
+async function agentSend() {
+  const input = document.getElementById('cp-input');
+  const msg   = input.value.trim();
+  if (!msg || !activeToken) return;
+  input.value = ''; input.style.height = 'auto';
+  await fetch('/api/support/reply', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({token: activeToken, message: msg})
+  });
+  lastAgentId = 0;
+  await pollActiveChat();
+}
+
+function handleAgentKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); agentSend(); }
+}
+
+function agentResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ── Canned responses ───────────────────────────────────
+function renderCannedChips() {
+  const container = document.getElementById('cp-canned');
+  container.innerHTML = canned.map(c =>
+    `<span class="canned-chip" onclick="insertCanned(${JSON.stringify(c.response)})">${c.shortcut}</span>`
+  ).join('');
+}
+
+function insertCanned(text) {
+  const input = document.getElementById('cp-input');
+  input.value = text;
+  input.focus();
+  agentResize(input);
+}
+
+// ── Notification ───────────────────────────────────────
+function showNotif(name, status) {
+  const toast = document.getElementById('notif-toast');
+  toast.innerHTML = `<div>💬 <span class="nt-name">${name}</span> — ${status}</div><div style="font-size:0.72rem;color:#5f5e72;margin-top:4px">Click to view</div>`;
+  toast.classList.add('show');
+  toast.onclick = () => {
+    const token = Object.keys(sessionsData).find(t => sessionsData[t].customer_name === name);
+    if (token) openSession(token);
+    toast.classList.remove('show');
+  };
+  setTimeout(() => toast.classList.remove('show'), 5000);
+}
+
+// ── Utils ──────────────────────────────────────────────
+function renderMd(text) {
+  return text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');
+}
+
+function formatTime(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  }
+  return d.toLocaleDateString([], {month:'short',day:'numeric'});
+}
+</script>
+{% endblock %}
+
+{% block footer %}{% endblock %}

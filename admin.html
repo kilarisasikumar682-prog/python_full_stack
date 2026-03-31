@@ -1,0 +1,620 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  /* ── CORE PAGE ── */
+  .admin-page { 
+    background: var(--bg); 
+    min-height: calc(100vh - 64px); 
+    font-family: 'Instrument Sans', system-ui, sans-serif;
+  }
+
+  /* ── ADMIN HEADER ── */
+  .admin-header {
+    background: linear-gradient(to bottom, rgba(20, 20, 20, 0.8), rgba(10, 10, 10, 0.95));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 30px 40px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .admin-header-inner { 
+    max-width: 1200px; 
+    margin: 0 auto; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    flex-wrap: wrap; 
+    gap: 20px; 
+  }
+
+  .admin-title-row { 
+    display: flex; 
+    align-items: center; 
+    gap: 16px; 
+  }
+
+  .admin-icon {
+    width: 48px; height: 48px;
+    background: rgba(37, 99, 235, 0.1);
+    border: 1px solid rgba(37, 99, 235, 0.3);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+  }
+
+  .admin-title { 
+    font-family: 'Syne', sans-serif; 
+    font-size: 1.6rem; 
+    font-weight: 800; 
+    color: var(--text);
+  }
+
+  .admin-sub { 
+    font-size: 0.85rem; 
+    color: var(--text3); 
+    margin-top: 4px; 
+  }
+
+  /* ── ADMIN ACTIONS (CLEAN & PROFESSIONAL) ── */
+  .admin-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .admin-actions .btn {
+    padding: 10px 18px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+
+  /* Primary Action */
+  .btn-primary {
+    background: #2563eb;
+    color: white;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  }
+  .btn-primary:hover { background: #1d4ed8; transform: translateY(-2px); }
+
+  /* Secondary Actions */
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .btn-secondary:hover { 
+    background: rgba(255, 255, 255, 0.1); 
+    color: var(--text); 
+  }
+
+  /* Warning/Attention Action */
+  .btn-attention {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+  .btn-attention:hover { background: rgba(245, 158, 11, 0.25); }
+
+  /* Ghost/Danger */
+  .btn-ghost-danger {
+    background: transparent;
+    color: #ef4444;
+  }
+  .btn-ghost-danger:hover { background: rgba(239, 68, 68, 0.1); }
+
+  /* ── BODY & STATS ── */
+  .admin-body { 
+    max-width: 1200px; 
+    margin: 0 auto; 
+    padding: 40px 40px 80px; 
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin-bottom: 16px;
+    font-weight: 700;
+  }
+
+  .stats-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+    gap: 16px; 
+    margin-bottom: 32px; 
+  }
+
+  .stat-c {
+    background: var(--bg2); 
+    border: 1px solid var(--border); 
+    border-radius: 12px;
+    padding: 24px 20px; 
+    position: relative; 
+    transition: transform 0.2s;
+  }
+  
+  .stat-c:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.15); }
+
+  .stat-lbl { 
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    color: var(--text3); 
+    margin-bottom: 8px; 
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-val { 
+    font-family: 'Syne', sans-serif; 
+    font-size: 1.8rem; 
+    font-weight: 700; 
+  }
+
+  /* Colors for stats */
+  .c-purple .stat-val { color: #a855f7; }
+  .c-green .stat-val { color: #10b981; }
+  .c-blue .stat-val { color: #3b82f6; }
+  .c-gold .stat-val { color: #f59e0b; }
+  .c-red .stat-val { color: #ef4444; }
+
+  /* ── TABS ── */
+  .admin-tabs { 
+    display: flex; 
+    gap: 8px; 
+    border-bottom: 2px solid rgba(255,255,255,0.05); 
+    margin-bottom: 24px; 
+    padding-bottom: 8px;
+  }
+
+  .admin-tab {
+    padding: 10px 20px; 
+    font-size: 0.9rem; 
+    font-weight: 600; 
+    color: var(--text3); 
+    background: transparent; 
+    border: none; 
+    cursor: pointer;
+    border-radius: 8px; 
+    transition: all 0.2s;
+  }
+
+  .admin-tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+  .admin-tab.active { background: rgba(37, 99, 235, 0.15); color: #60a5fa; }
+
+  .tab-pane { display: none; animation: fadeIn 0.3s ease; }
+  .tab-pane.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── TABLES ── */
+  .acc-card { 
+    background: var(--bg2); 
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    overflow: hidden; 
+  }
+
+  .table-responsive { width: 100%; overflow-x: auto; }
+  table.admin-tbl { width: 100%; border-collapse: collapse; white-space: nowrap; }
+  
+  table.admin-tbl th {
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    color: var(--text3); 
+    padding: 16px 24px; 
+    text-align: left; 
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  table.admin-tbl td {
+    padding: 16px 24px; 
+    font-size: 0.9rem; 
+    color: var(--text2);
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+    vertical-align: middle;
+  }
+
+  table.admin-tbl tbody tr:hover td { background: rgba(255,255,255,0.03); }
+
+  .col-mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+  .col-name { font-weight: 600; color: var(--text); }
+  .col-right { text-align: right; }
+  .col-center { text-align: center; }
+
+  /* ── BADGES & TABLE BUTTONS ── */
+  .status-badge {
+    padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-active { background: rgba(16, 185, 129, 0.1); color: #34d399; }
+  .badge-frozen { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+
+  .action-flex { display: flex; gap: 8px; align-items: center; }
+  
+  .btn-tbl {
+    padding: 6px 14px; font-size: 0.8rem; font-weight: 500; border-radius: 6px;
+    border: none; cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-tbl-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+  .btn-tbl-warning:hover { background: rgba(245, 158, 11, 0.25); }
+  .btn-tbl-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+  .btn-tbl-success:hover { background: rgba(16, 185, 129, 0.25); }
+  .btn-tbl-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+  .btn-tbl-danger:hover { background: rgba(239, 68, 68, 0.25); }
+
+  /* ── DANGER ZONE & CARDS ── */
+  .action-card { 
+    background: var(--bg2); border: 1px solid var(--border); 
+    border-radius: 12px; padding: 32px; max-width: 500px; 
+  }
+  
+  .danger-zone { 
+    background: rgba(239, 68, 68, 0.05); 
+    border: 1px solid rgba(239, 68, 68, 0.3); 
+  }
+
+  .form-control {
+    width: 100%; padding: 12px 16px; background: rgba(0,0,0,0.3); color: var(--text);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.95rem;
+    margin-top: 8px; transition: border-color 0.2s;
+  }
+  .form-control:focus { border-color: #3b82f6; outline: none; }
+
+  /* ── RECENT LOGS ── */
+  .log-list { list-style: none; padding: 0; margin: 0; }
+  .log-item {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .log-desc { flex: 1; font-size: 0.9rem; color: var(--text2); }
+  .log-date { font-size: 0.8rem; color: var(--text3); }
+  
+  /* ── MODALS ── */
+  .modal {
+    position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-content {
+    background-color: var(--bg2); border: 1px solid rgba(255,255,255,0.1);
+    padding: 32px; border-radius: 16px; width: 100%; max-width: 450px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  }
+
+  /* Responsive Design */
+  @media(max-width: 768px) {
+    .admin-header, .admin-body { padding: 20px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .admin-actions { flex-direction: column; align-items: stretch; }
+    .admin-actions .btn { justify-content: center; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="admin-page">
+
+  <div class="admin-header">
+    <div class="admin-header-inner">
+      <div class="admin-title-row">
+        <div class="admin-icon">📊</div>
+        <div>
+          <div class="admin-title">Admin Dashboard</div>
+          <div class="admin-sub">System control & overview for PyBank</div>
+        </div>
+      </div>
+      
+      <div class="admin-actions">
+        <a href="{{ url_for('admin_analytics') }}" class="btn btn-primary">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          View Analytics
+        </a>
+        <form method="POST" action="{{ url_for('admin_apply_interest') }}" style="display:inline; margin:0;">
+          <button type="submit" class="btn btn-secondary">📈 Apply Interest</button>
+        </form>
+        <a href="{{ url_for('admin_deposit_requests') }}" class="btn btn-attention">💰 Deposits ({{ pending_count }})</a>
+        <a href="{{ url_for('admin_loans') }}" class="btn btn-secondary">🔍 Loans</a>
+        <a href="{{ url_for('admin_logout') }}" class="btn btn-ghost-danger">🚪 Sign Out</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-body">
+
+    <div class="section-title">System Overview</div>
+    <div class="stats-grid">
+      <div class="stat-c c-purple">
+        <div class="stat-lbl">Total Liquidity</div>
+        <div class="stat-val">${{ "%.0f"|format(stats.total_balance or 0) }}</div>
+      </div>
+      <div class="stat-c c-blue">
+        <div class="stat-lbl">Savings Accounts</div>
+        <div class="stat-val">{{ stats.savings or 0 }}</div>
+      </div>
+      <div class="stat-c c-gold">
+        <div class="stat-lbl">Checking Accounts</div>
+        <div class="stat-val">{{ stats.checking or 0 }}</div>
+      </div>
+      <div class="stat-c c-green">
+        <div class="stat-lbl">Total Users</div>
+        <div class="stat-val">{{ stats.total_accounts or 0 }}</div>
+      </div>
+      <div class="stat-c c-red">
+        <div class="stat-lbl">Frozen</div>
+        <div class="stat-val">{{ stats.frozen or 0 }}</div>
+      </div>
+    </div>
+
+    <div class="section-title">Cash Flow (All Time)</div>
+    <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="stat-c c-green">
+        <div class="stat-lbl">Total Deposited</div>
+        <div class="stat-val">${{ "%.0f"|format(log_map.get('DEPOSIT',0)) }}</div>
+      </div>
+      <div class="stat-c c-red">
+        <div class="stat-lbl">Total Withdrawn</div>
+        <div class="stat-val">${{ "%.0f"|format(log_map.get('WITHDRAW',0)) }}</div>
+      </div>
+      <div class="stat-c c-purple">
+        <div class="stat-lbl">Transfer Volume</div>
+        <div class="stat-val">${{ "%.0f"|format(log_map.get('TRANSFER_OUT',0)) }}</div>
+      </div>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="showTab('accounts',this)">👥 Accounts</button>
+      <button class="admin-tab" onclick="showTab('logs',this)">📜 Recent Logs</button>
+      <button class="admin-tab" onclick="showTab('freeze',this)">❄️ Access Control</button>
+      <button class="admin-tab" onclick="showTab('danger',this)" style="color: #ef4444;">⚠️ Danger Zone</button>
+    </div>
+
+    <div class="tab-pane active" id="tab-accounts">
+      <div class="acc-card">
+        <div class="table-responsive">
+          <table class="admin-tbl">
+              <thead>
+                  <tr>
+                      <th>Account No.</th>
+                      <th>Account Holder</th>
+                      <th>Phone</th>
+                      <th>Type</th>
+                      <th class="col-right">Balance</th>
+                      <th class="col-center">CIBIL</th>
+                      <th class="col-center">Status</th>
+                      <th>Actions</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for acc in accounts %}
+                  <tr>
+                      <td class="col-mono">{{ fmt_acc(acc.account_number) }}</td>
+                      <td class="col-name">{{ acc.account_holder }}</td>
+                      <td class="col-mono">{{ acc.phone_number }}</td>
+                      <td>{{ acc.account_type.replace('Account', '') }}</td>
+                      <td class="col-mono col-right">${{ "%.2f"|format(acc.balance) }}</td>
+                      
+                      <td class="col-mono col-center" 
+                          style="{% if acc.cibil_score < 500 %}color: #ef4444;{% elif acc.cibil_score >= 700 %}color: #10b981;{% endif %}">
+                          {{ acc.cibil_score }}
+                      </td>
+                      
+                      <td class="col-center">
+                          {% if acc.is_frozen %}
+                          <span class="status-badge badge-frozen">Frozen</span>
+                          {% else %}
+                          <span class="status-badge badge-active">Active</span>
+                          {% endif %}
+                      </td>
+                      
+                      <td>
+                          <div class="action-flex">
+                              <form method="POST" action="{{ url_for('admin_freeze', acc_num=acc.account_number) }}" style="margin: 0;">
+                                  <button type="submit" class="btn-tbl {% if acc.is_frozen %}btn-tbl-success{% else %}btn-tbl-warning{% endif %}">
+                                      {% if acc.is_frozen %}🔓 Unfreeze{% else %}🔒 Freeze{% endif %}
+                                  </button>
+                              </form>
+                              
+                              <button type="button" class="btn-tbl btn-tbl-danger" 
+                                      onclick="showCloseModal('{{ acc.account_number }}', '{{ acc.account_holder }}', {{ acc.balance }})">
+                                  🗑️ Close
+                              </button>
+                              
+                              {% if acc.balance > 0 %}
+                              <button type="button" class="btn-tbl btn-secondary" 
+                                      onclick="showForceCloseModal('{{ acc.account_number }}', '{{ acc.account_holder }}', {{ acc.balance }})">
+                                  ⚠️ Force Close
+                              </button>
+                              {% endif %}
+                          </div>
+                      </td>
+                  </tr>
+                  {% endfor %}
+              </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="tab-logs">
+      <div class="acc-card">
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0; font-size: 1.1rem;">Recent Transactions</h3>
+          <a href="{{ url_for('admin_search_logs') }}" class="btn-secondary" style="padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem;">Search All logs →</a>
+        </div>
+        {% if recent_logs %}
+        <ul class="log-list">
+          {% for l in recent_logs %}
+          {% set is_credit = l.log_type in ['DEPOSIT','TRANSFER_IN','INTEREST'] %}
+          {% set is_debit  = l.log_type in ['WITHDRAW','TRANSFER_OUT'] %}
+          <li class="log-item">
+            <span class="status-badge" style="background:rgba(255,255,255,0.05); color:var(--text); min-width: 100px; text-align: center;">
+              {{ l.log_type.replace('_',' ') }}
+            </span>
+            <span class="log-desc">{{ l.description or l.account_ref }}</span>
+            {% if l.amount %}
+              <span class="col-mono" style="{{ 'color:#10b981' if is_credit else 'color:#ef4444' if is_debit else '' }}">
+                ${{ "%.2f"|format(l.amount) }}
+              </span>
+            {% endif %}
+            <span class="log-date col-mono">{{ l.created_at }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div style="padding: 40px; text-align: center; color: var(--text3);">No transaction logs found.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="tab-pane" id="tab-freeze">
+      <div class="action-card">
+        <h3 class="section-title" style="margin-top: 0;">❄️ Manual Account Override</h3>
+        <p style="color: var(--text2); font-size: 0.9rem; margin-bottom: 24px;">
+          Manually entering an account number here will instantly toggle its frozen status. A frozen account cannot send, receive, or withdraw funds.
+        </p>
+        <form method="POST" id="freeze-form">
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 0.85rem; color: var(--text3); font-weight: 600; text-transform: uppercase;">Account Number</label>
+            <input class="form-control" type="text" id="freeze-acc" placeholder="e.g. 10002938" autocomplete="off" />
+          </div>
+          <button type="button" class="btn btn-secondary" onclick="freezeAccount()">Toggle Status</button>
+          <div id="freeze-result" style="margin-top:12px; font-size:0.85rem; font-weight: 500;"></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="tab-danger">
+      <div class="action-card danger-zone">
+        <h3 class="section-title" style="margin-top: 0; color: #ef4444;">⚠️ Factory Reset</h3>
+        <p style="color: var(--text2); font-size: 0.9rem; margin-bottom: 24px;">
+          This permanently deletes <strong>all accounts and transaction logs</strong>. This action cannot be undone. You will be signed out immediately upon confirmation.
+        </p>
+        <form method="POST" action="{{ url_for('admin_factory_reset') }}" onsubmit="return confirm('FINAL WARNING: Wipe all data? This cannot be undone!')">
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 0.85rem; color: var(--text3); font-weight: 600;">Type DELETE to confirm</label>
+            <input class="form-control" type="text" name="confirm" placeholder="DELETE" style="border-color: rgba(239,68,68,0.3)" autocomplete="off" />
+          </div>
+          <button type="submit" class="btn" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">🧹 Wipe All Data</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="closeAccountModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3 style="color: var(--text); font-family: 'Syne', sans-serif; margin-top: 0;">Close Account</h3>
+        <p id="closeAccountMessage" style="margin-bottom: 20px; color: var(--text2); font-size: 0.95rem; line-height: 1.5;"></p>
+        <form method="POST" id="closeAccountForm">
+            <div style="margin-bottom: 24px;">
+                <label style="font-size: 0.85rem; color: var(--text3); font-weight: 600;">Type <strong>CLOSE</strong> to confirm:</label>
+                <input type="text" name="confirm" class="form-control" required placeholder="CLOSE">
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <button type="submit" class="btn" style="background: #ef4444; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; flex: 1;">Confirm Closure</button>
+              <button type="button" class="btn btn-secondary" style="padding: 10px 16px; border-radius: 8px; cursor: pointer; flex: 1;" onclick="hideCloseModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="forceCloseAccountModal" class="modal" style="display: none;">
+    <div class="modal-content" style="border-top: 4px solid #ef4444;">
+        <h3 style="color: #ef4444; font-family: 'Syne', sans-serif; margin-top: 0;">Force Close Account</h3>
+        <div style="background: rgba(239,68,68,0.1); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+          <p style="color: #f87171; font-weight: 600; font-size: 0.85rem; margin: 0;">
+            ⚠️ WARNING: This will delete the account even with a remaining balance or active loans!
+          </p>
+        </div>
+        <div id="forceCloseAccountMessage" style="margin-bottom: 24px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; line-height: 1.6;"></div>
+        <form method="POST" id="forceCloseAccountForm">
+            <div style="margin-bottom: 24px;">
+                <label style="font-size: 0.85rem; color: var(--text3); font-weight: 600;">Type <strong>FORCE CLOSE</strong> to confirm:</label>
+                <input type="text" name="confirm" class="form-control" required placeholder="FORCE CLOSE">
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <button type="submit" class="btn" style="background: #991b1b; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; flex: 1;">Force Close Now</button>
+              <button type="button" class="btn btn-secondary" style="padding: 10px 16px; border-radius: 8px; cursor: pointer; flex: 1;" onclick="hideForceCloseModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function showTab(name, btn) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  async function freezeAccount() {
+    const acc = document.getElementById('freeze-acc').value.trim().replace(/\s/g,'');
+    if (!acc) return;
+    const res  = await fetch(`/admin/freeze/${acc}`, {method:'POST'});
+    const result = document.getElementById('freeze-result');
+    if (res.ok) {
+      result.style.color = '#10b981';
+      result.textContent = '✓ Status updated. Refreshing...';
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      result.style.color = '#ef4444';
+      result.textContent = '✕ Account not found.';
+    }
+  }
+  
+  function showCloseModal(accountNumber, accountHolder, balance) {
+    if (balance > 0) {
+        alert("Cannot safely close account with balance $" + balance.toFixed(2) + ". Balance must be $0. Use Force Close if necessary.");
+        return;
+    }
+    document.getElementById('closeAccountMessage').innerHTML = 
+        `Are you sure you want to permanently close account <strong>${accountNumber}</strong> belonging to <strong>${accountHolder}</strong>?`;
+    document.getElementById('closeAccountForm').action = `/admin/close-account/${accountNumber}`;
+    document.getElementById('closeAccountModal').style.display = 'flex';
+  }
+
+  function hideCloseModal() {
+    document.getElementById('closeAccountModal').style.display = 'none';
+  }
+
+  function showForceCloseModal(accountNumber, accountHolder, balance) {
+    document.getElementById('forceCloseAccountMessage').innerHTML = 
+        `<span style="color:var(--text3)">Account No:</span> ${accountNumber}<br>` +
+        `<span style="color:var(--text3)">Holder Name:</span> ${accountHolder}<br>` +
+        `<span style="color:var(--text3)">Lost Balance:</span> <span style="color:#ef4444">$${balance.toFixed(2)}</span>`;
+    document.getElementById('forceCloseAccountForm').action = `/admin/force-close-account/${accountNumber}`;
+    document.getElementById('forceCloseAccountModal').style.display = 'flex';
+  }
+
+  function hideForceCloseModal() {
+    document.getElementById('forceCloseAccountModal').style.display = 'none';
+  }
+
+  // Close modals when clicking outside the content box
+  window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        hideCloseModal();
+        hideForceCloseModal();
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+{% block title %}Loans — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  .loans-page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  
+  /* Hero */
+  .loans-hero {
+    background: linear-gradient(135deg, #0c0b18, #130f2a);
+    border-radius: var(--r-lg);
+    padding: 40px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .loans-hero::before {
+    content: '';
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(124,106,247,0.15), transparent 70%);
+    top: -100px;
+    right: -100px;
+    pointer-events: none;
+  }
+  .lh-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+  }
+  .lh-sub {
+    font-size: 1rem;
+    color: var(--text2);
+    margin-bottom: 24px;
+  }
+  .lh-cibil {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(124,106,247,0.12);
+    border: 1px solid rgba(124,106,247,0.25);
+    padding: 12px 18px;
+    border-radius: var(--r);
+  }
+  .lh-cibil-score {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--green);
+  }
+  .lh-cibil-text {
+    font-size: 0.78rem;
+    color: var(--text3);
+  }
+
+  /* Tabs */
+  .loans-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ltab {
+    padding: 12px 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text3);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .ltab:hover { color: var(--text2); }
+  .ltab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* Product grid */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 720px) { .product-grid { grid-template-columns: 1fr; } }
+
+  .product-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .product-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(124,106,247,0.3);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  }
+  .product-card.locked {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .product-card.locked::after {
+    content: '🔒 CIBIL Too Low';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(239,68,68,0.9);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .pc-header {
+    padding: 24px;
+    background: linear-gradient(135deg, rgba(124,106,247,0.08), rgba(124,106,247,0.02));
+    border-bottom: 1px solid var(--border);
+  }
+  .pc-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .pc-desc {
+    font-size: 0.82rem;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  .pc-body {
+    padding: 20px 24px;
+  }
+  .pc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .pc-row:last-child { border-bottom: none; }
+  .pc-label {
+    font-size: 0.75rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .pc-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+  .pc-value.highlight {
+    font-size: 1.2rem;
+    color: var(--green);
+    font-weight: 700;
+  }
+  .pc-discount {
+    background: rgba(34,197,94,0.12);
+    border: 1px solid rgba(34,197,94,0.25);
+    color: var(--green);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-left: 6px;
+  }
+
+  .pc-footer {
+    padding: 0 24px 24px;
+  }
+  .pc-footer .btn { width: 100%; }
+
+  /* Active loans */
+  .loan-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .li-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .li-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent2);
+    font-weight: 600;
+  }
+  .li-status {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 100px;
+  }
+  .li-status.active { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+  .li-status.closed { background: rgba(255,255,255,0.05); color: var(--text3); border: 1px solid var(--border); }
+
+  .li-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 600px) { .li-grid { grid-template-columns: 1fr; gap: 12px; } }
+  .li-cell {
+    padding: 12px;
+    background: rgba(255,255,255,0.02);
+    border-radius: var(--r-sm);
+  }
+  .li-cell-label {
+    font-size: 0.68rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .li-cell-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .li-progress {
+    margin-bottom: 12px;
+  }
+  .li-progress-label {
+    font-size: 0.75rem;
+    color: var(--text3);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .li-progress-bar {
+    height: 6px;
+    background: var(--bg3);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .li-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--accent));
+    border-radius: 100px;
+    transition: width 0.8s ease;
+  }
+
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text3);
+  }
+  .empty-state .es-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="loans-page">
+  <!-- Hero -->
+  <div class="loans-hero">
+    <h1 class="lh-title">Get the loan you need 💰</h1>
+    <p class="lh-sub">CIBIL-based rates · Instant approval · Flexible tenure</p>
+    <div class="lh-cibil">
+      <div>
+        <div class="lh-cibil-text">Your CIBIL Score</div>
+        <div class="lh-cibil-score">{{ acc.cibil_score }}</div>
+      </div>
+      <div style="border-left: 1px solid rgba(255,255,255,0.1); padding-left: 16px;">
+        <div class="lh-cibil-text">You qualify for</div>
+        <div style="font-weight: 600; font-size: 0.9rem; color: var(--text);">
+          {% set eligible_count = products | selectattr('eligible') | list | length %}
+          {{ eligible_count }}/{{ products | length }} loan products
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="loans-tabs">
+    <button class="ltab active" onclick="switchLoanTab('marketplace', this)">🏪 Marketplace</button>
+    <button class="ltab" onclick="switchLoanTab('active', this)">📊 My Loans ({{ active | length }})</button>
+    <button class="ltab" onclick="switchLoanTab('pending', this)">⏳ Pending ({{ pending | length }})</button>
+  </div>
+
+  <!-- Tab: Marketplace -->
+  <div class="tab-pane active" id="tab-marketplace">
+    <div class="product-grid">
+      {% for p in products %}
+      <div class="product-card {% if not p.eligible %}locked{% endif %}">
+        <div class="pc-header">
+          <div class="pc-name">{{ p.name }}</div>
+          <div class="pc-desc">{{ p.description }}</div>
+        </div>
+        <div class="pc-body">
+          <div class="pc-row">
+            <span class="pc-label">Interest Rate</span>
+            <span class="pc-value highlight">
+              {{ "%.2f"|format(p.your_rate * 100) }}%
+              {% if p.discount > 0 %}
+              <span class="pc-discount">-{{ "%.1f"|format(p.discount * 100) }}%</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="pc-row">
+            <span class="pc-label">Loan Amount</span>
+            <span class="pc-value">${{ "{:,.0f}".format(p.min_amount) }} – ${{ "{:,.0f}".format(p.max_amount) }}</span>
+          </div>
+          <div class="pc-row">
+            <span class="pc-label">Tenure</span>
+            <span class="pc-value">{{ p.min_tenure_months }}–{{ p.max_tenure_months }} months</span>
+          </div>
+          <div class="pc-row">
+            <span class="pc-label">Min CIBIL</span>
+            <span class="pc-value" style="color: {{ 'var(--green)' if acc.cibil_score >= p.min_cibil_score else 'var(--red)' }}">
+              {{ p.min_cibil_score }}+
+            </span>
+          </div>
+        </div>
+        <div class="pc-footer">
+          {% if p.eligible %}
+          <a href="{{ url_for('loan_apply', product_id=p.id) }}" class="btn btn-primary btn-lg">Apply Now →</a>
+          {% else %}
+          <button class="btn btn-outline btn-lg" disabled>Improve CIBIL to Unlock</button>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Tab: Active Loans -->
+  <div class="tab-pane" id="tab-active">
+    {% if active %}
+      {% for loan in active %}
+      <div class="loan-item">
+        <div class="li-top">
+          <div class="li-id">{{ loan.loan_id }}</div>
+          <span class="li-status {{ loan.status }}">{{ loan.status }}</span>
+        </div>
+        <div class="li-grid">
+          <div class="li-cell">
+            <div class="li-cell-label">EMI Amount</div>
+            <div class="li-cell-value" style="color: var(--accent2);">${{ "{:,.2f}".format(loan.emi_amount) }}</div>
+          </div>
+          <div class="li-cell">
+            <div class="li-cell-label">Outstanding</div>
+            <div class="li-cell-value" style="color: var(--gold);">${{ "{:,.2f}".format(loan.outstanding_balance) }}</div>
+          </div>
+          <div class="li-cell">
+            <div class="li-cell-label">Interest Rate</div>
+            <div class="li-cell-value">{{ "%.2f"|format(loan.interest_rate * 100) }}%</div>
+          </div>
+        </div>
+        <div class="li-progress">
+          <div class="li-progress-label">
+            <span>Progress: {{ loan.emis_paid }}/{{ loan.tenure_months }} EMIs paid</span>
+            <span>{{ loan.emis_remaining }} remaining</span>
+          </div>
+          <div class="li-progress-bar">
+            <div class="li-progress-fill" style="width: {{ (loan.emis_paid / loan.tenure_months * 100) | round | int }}%"></div>
+          </div>
+        </div>
+        {% if loan.status == 'active' %}
+        <form method="POST" action="{{ url_for('pay_emi', loan_id=loan.loan_id) }}" style="display: flex; gap: 12px;">
+          <button type="submit" class="btn btn-success">💳 Pay EMI (${{ "{:,.2f}".format(loan.emi_amount) }})</button>
+          <a href="{{ url_for('my_loans') }}" class="btn btn-outline btn-sm">View Details →</a>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="es-icon">📭</div>
+      <div>No active loans. Browse the marketplace to apply!</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Tab: Pending Applications -->
+  <div class="tab-pane" id="tab-pending">
+    {% if pending %}
+      {% for app in pending %}
+      <div class="loan-item">
+        <div class="li-top">
+          <div>
+            <div class="li-id">{{ app.application_id }}</div>
+            <div style="font-size: 0.85rem; color: var(--text2); margin-top: 4px;">{{ app.product_name }}</div>
+          </div>
+          <span class="li-status" style="background: rgba(245,158,11,0.12); color: var(--gold); border-color: rgba(245,158,11,0.25);">⏳ PENDING</span>
+        </div>
+        <div class="li-grid">
+          <div class="li-cell">
+            <div class="li-cell-label">Requested Amount</div>
+            <div class="li-cell-value">${{ "{:,.2f}".format(app.amount) }}</div>
+          </div>
+          <div class="li-cell">
+            <div class="li-cell-label">EMI</div>
+            <div class="li-cell-value">${{ "{:,.2f}".format(app.emi_amount) }}</div>
+          </div>
+          <div class="li-cell">
+            <div class="li-cell-label">Tenure</div>
+            <div class="li-cell-value">{{ app.tenure_months }} months</div>
+          </div>
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text3);">
+          ⏱️ Applied on {{ app.created_at }} · Awaiting admin approval
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="es-icon">✅</div>
+      <div>No pending applications</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function switchLoanTab(name, btn) {
+    document.querySelectorAll('.ltab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% block title %}PyBank — Next-Generation Banking{% endblock %}
+
+{% block head %}
+<style>
+  /* Override nav for landing - transparent */
+  .nav { background:transparent; border-bottom-color:transparent; }
+  .nav.scrolled { background:rgba(8,8,10,0.9); border-bottom-color:var(--border); }
+
+  .landing { overflow:hidden; }
+
+  /* ── HERO ── */
+  .hero {
+    position:relative;
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    text-align:center;
+    padding:120px 24px 80px;
+    overflow:hidden;
+  }
+  /* Radial glow */
+  .hero::before {
+    content:'';
+    position:absolute;
+    width:900px; height:900px;
+    background:radial-gradient(ellipse, rgba(124,106,247,0.18) 0%, transparent 70%);
+    top:50%; left:50%;
+    transform:translate(-50%,-60%);
+    pointer-events:none;
+  }
+  /* Grid lines */
+  .hero-grid {
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size:60px 60px;
+    mask-image:radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%);
+  }
+
+  .hero-eyebrow {
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:0.72rem; font-weight:600;
+    letter-spacing:0.2em; text-transform:uppercase;
+    color:var(--accent2);
+    background:rgba(124,106,247,0.1);
+    border:1px solid rgba(124,106,247,0.25);
+    padding:6px 16px; border-radius:100px;
+    margin-bottom:32px;
+    animation:fadeUp 0.8s ease both;
+  }
+  .hero-eyebrow::before { content:'●'; font-size:0.5rem; animation:pulse 2s ease infinite; }
+  @keyframes pulse {
+    0%,100%{opacity:1} 50%{opacity:0.3}
+  }
+
+  .hero-title {
+    font-family:'Syne',sans-serif;
+    font-size:clamp(2.8rem, 8vw, 6.5rem);
+    font-weight:800;
+    line-height:0.95;
+    letter-spacing:-0.04em;
+    color:var(--text);
+    margin-bottom:28px;
+    animation:fadeUp 0.8s 0.1s ease both;
+  }
+  .hero-title .line2 { color:transparent; -webkit-text-stroke:1px rgba(255,255,255,0.3); }
+  .hero-title .accent-word {
+    background:linear-gradient(135deg, var(--accent2), var(--accent));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+
+  .hero-sub {
+    font-size:1.1rem; font-weight:400;
+    color:var(--text2); max-width:520px;
+    line-height:1.7; margin-bottom:48px;
+    animation:fadeUp 0.8s 0.2s ease both;
+  }
+
+  .hero-cta {
+    display:flex; gap:14px; flex-wrap:wrap;
+    justify-content:center;
+    animation:fadeUp 0.8s 0.3s ease both;
+  }
+  .cta-primary {
+    font-family:'Syne',sans-serif;
+    font-size:0.9rem; font-weight:700;
+    letter-spacing:0.02em;
+    background:linear-gradient(135deg, var(--accent), var(--accent3));
+    color:#fff; border:none; cursor:pointer;
+    padding:15px 36px; border-radius:10px;
+    text-decoration:none;
+    box-shadow:0 0 40px rgba(124,106,247,0.4);
+    transition:all 0.2s;
+  }
+  .cta-primary:hover { transform:translateY(-2px); box-shadow:0 0 60px rgba(124,106,247,0.55); }
+  .cta-secondary {
+    font-size:0.88rem; font-weight:500;
+    color:var(--text2); border:1px solid var(--border2);
+    background:rgba(255,255,255,0.03);
+    padding:15px 28px; border-radius:10px;
+    text-decoration:none; cursor:pointer;
+    transition:all 0.2s;
+  }
+  .cta-secondary:hover { color:var(--text); border-color:rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); }
+
+  /* Scroll indicator */
+  .scroll-hint {
+    position:absolute; bottom:40px; left:50%; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase;
+    color:var(--text3);
+    animation:fadeUp 1s 0.6s ease both;
+  }
+  .scroll-line {
+    width:1px; height:40px;
+    background:linear-gradient(to bottom, var(--text3), transparent);
+    animation:scrollLine 2s ease infinite;
+  }
+  @keyframes scrollLine { 0%{transform:scaleY(0);transform-origin:top} 50%{transform:scaleY(1);transform-origin:top} 51%{transform-origin:bottom} 100%{transform:scaleY(0);transform-origin:bottom} }
+
+  /* Floating cards */
+  .hero-cards {
+    position:absolute; width:100%; height:100%;
+    top:0; left:0; pointer-events:none; overflow:hidden;
+  }
+  .float-card {
+    position:absolute;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border2);
+    border-radius:var(--r);
+    padding:16px 20px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.75rem;
+    color:var(--text2);
+    backdrop-filter:blur(10px);
+    animation:float 6s ease-in-out infinite;
+  }
+  .float-card:nth-child(1) { top:18%; left:5%; animation-delay:0s; }
+  .float-card:nth-child(2) { top:30%; right:6%; animation-delay:2s; }
+  .float-card:nth-child(3) { bottom:22%; left:8%; animation-delay:4s; }
+  @keyframes float {
+    0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)}
+  }
+  .float-card .fc-label { font-size:0.62rem; color:var(--text3); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:6px; }
+  .float-card .fc-val   { font-size:1.1rem; font-weight:500; color:var(--text); }
+  .float-card .fc-green { color:var(--green); }
+  .float-card .fc-purple{ color:var(--accent2); }
+
+  @keyframes fadeUp {
+    from{opacity:0;transform:translateY(20px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+
+  /* ── FEATURES ── */
+  .features {
+    padding:100px 40px;
+    max-width:1100px; margin:0 auto;
+  }
+  .section-label {
+    font-size:0.72rem; font-weight:700;
+    letter-spacing:0.2em; text-transform:uppercase;
+    color:var(--accent2); margin-bottom:16px;
+  }
+  .section-title {
+    font-family:'Syne',sans-serif;
+    font-size:clamp(2rem,4vw,3rem);
+    font-weight:800;
+    letter-spacing:-0.03em;
+    line-height:1.1;
+    margin-bottom:16px;
+  }
+  .section-sub { font-size:1rem; color:var(--text2); max-width:480px; line-height:1.7; margin-bottom:60px; }
+
+  .feat-grid {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+  }
+  @media(max-width:768px){ .feat-grid{grid-template-columns:1fr 1fr;} }
+  @media(max-width:500px){ .feat-grid{grid-template-columns:1fr;} }
+
+  .feat-card {
+    background:var(--bg2);
+    border:1px solid var(--border);
+    border-radius:var(--r);
+    padding:28px 24px;
+    transition:all 0.25s;
+    position:relative; overflow:hidden;
+  }
+  .feat-card::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--accent), transparent);
+    opacity:0; transition:opacity 0.25s;
+  }
+  .feat-card:hover { transform:translateY(-4px); border-color:rgba(124,106,247,0.3); box-shadow:0 20px 40px rgba(0,0,0,0.4); }
+  .feat-card:hover::before { opacity:1; }
+  .feat-icon {
+    width:44px; height:44px;
+    background:rgba(124,106,247,0.12);
+    border:1px solid rgba(124,106,247,0.2);
+    border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.3rem; margin-bottom:18px;
+  }
+  .feat-title {
+    font-family:'Syne',sans-serif;
+    font-size:1rem; font-weight:700;
+    margin-bottom:8px; letter-spacing:-0.01em;
+  }
+  .feat-body { font-size:0.85rem; color:var(--text2); line-height:1.65; }
+
+  /* ── STATS ── */
+  .stats-band {
+    border-top:1px solid var(--border);
+    border-bottom:1px solid var(--border);
+    padding:60px 40px;
+    background:var(--bg2);
+  }
+  .stats-inner {
+    max-width:900px; margin:0 auto;
+    display:grid; grid-template-columns:repeat(4,1fr);
+    gap:40px; text-align:center;
+  }
+  @media(max-width:600px){ .stats-inner{grid-template-columns:1fr 1fr;} }
+  .stat-num {
+    font-family:'Syne',sans-serif;
+    font-size:2.5rem; font-weight:800;
+    letter-spacing:-0.04em;
+    background:linear-gradient(135deg, var(--text), var(--text2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .stat-lbl { font-size:0.8rem; color:var(--text3); margin-top:4px; }
+
+  /* ── CTA BAND ── */
+  .cta-band {
+    padding:100px 40px;
+    text-align:center;
+  }
+  .cta-inner { max-width:580px; margin:0 auto; }
+  .cta-title {
+    font-family:'Syne',sans-serif;
+    font-size:clamp(2rem,4vw,3.2rem);
+    font-weight:800; letter-spacing:-0.03em; line-height:1.1;
+    margin-bottom:20px;
+  }
+  .cta-sub { font-size:1rem; color:var(--text2); line-height:1.7; margin-bottom:40px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="landing">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid"></div>
+    <div style="position:relative;z-index:2">
+      <div class="hero-eyebrow">Secure · Modern · Python-Powered</div>
+      <h1 class="hero-title">
+        Banking for<br>
+        <span class="line2">the <span class="accent-word">modern</span> age</span>
+      </h1>
+      <p class="hero-sub">PyBank gives you complete control of your finances — instant transfers, real-time CIBIL scoring, and bulletproof security. Built on Python and MySQL.</p>
+      <div class="hero-cta">
+        <a href="{{ url_for('register') }}" class="cta-primary">Open Account Free →</a>
+        <a href="{{ url_for('login') }}" class="cta-secondary">Sign In</a>
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-band">
+    <div class="stats-inner">
+      <div><div class="stat-num">12-digit</div><div class="stat-lbl">Secure Account Numbers</div></div>
+      <div><div class="stat-num">300–900</div><div class="stat-lbl">Live CIBIL Tracking</div></div>
+      <div><div class="stat-num">2 types</div><div class="stat-lbl">Savings & Checking</div></div>
+      <div><div class="stat-num">Instant</div><div class="stat-lbl">P2P Transfers</div></div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="features">
+    <div class="section-label">Everything you need</div>
+    <h2 class="section-title">Banking that<br>works for you</h2>
+    <p class="section-sub">A complete banking system with every feature you'd expect from a modern financial platform.</p>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-icon">💰</div>
+        <div class="feat-title">Deposit & Withdraw</div>
+        <div class="feat-body">Instant deposits and withdrawals with real-time balance updates and CIBIL score tracking.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📲</div>
+        <div class="feat-title">P2P Transfers</div>
+        <div class="feat-body">Send money to anyone using their phone number. Verified, secure, and instant.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">CIBIL Score</div>
+        <div class="feat-body">Track your credit health in real time. Every transaction impacts your score meaningfully.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🏦</div>
+        <div class="feat-title">Two Account Types</div>
+        <div class="feat-body">Choose Savings (5% interest) or Checking ($500 overdraft) to suit your needs.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📈</div>
+        <div class="feat-title">Auto Interest</div>
+        <div class="feat-body">5% interest applied to your savings balance — keeping your money working for you.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔐</div>
+        <div class="feat-title">PIN Security</div>
+        <div class="feat-body">4-digit PIN protection with secure identity-verified PIN reset via name & phone.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta-band">
+    <div class="cta-inner">
+      <h2 class="cta-title">Ready to take control of your money?</h2>
+      <p class="cta-sub">Open an account in under 60 seconds. No paperwork. No waiting. Just banking that works.</p>
+      <div class="hero-cta">
+        <a href="{{ url_for('register') }}" class="cta-primary">Get Started Free →</a>
+        <a href="{{ url_for('admin_login') }}" class="cta-secondary">Admin Login</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const nav = document.querySelector('.nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 50);
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}Sign In — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  .auth-glow {
+    position:fixed; top:0; right:0;
+    width:600px; height:600px;
+    background:radial-gradient(ellipse, rgba(124,106,247,0.12) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .auth-card {
+    background:var(--bg2);
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);
+    padding:40px;
+    animation:authIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes authIn {
+    from{opacity:0;transform:translateY(24px) scale(0.97)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .auth-logo {
+    display:flex; align-items:center; gap:10px;
+    font-family:'Syne',sans-serif; font-weight:800;
+    font-size:1.1rem; letter-spacing:-0.02em;
+    margin-bottom:32px;
+  }
+  .auth-logo-mark {
+    width:32px; height:32px;
+    background:linear-gradient(135deg, var(--accent), var(--accent3));
+    border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.8rem; font-weight:700; color:#fff;
+  }
+  .auth-title {
+    font-family:'Syne',sans-serif;
+    font-size:1.7rem; font-weight:800;
+    letter-spacing:-0.03em; margin-bottom:6px;
+  }
+  .auth-sub { font-size:0.88rem; color:var(--text2); margin-bottom:32px; }
+
+  .input-group { position:relative; }
+  .input-icon {
+    position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    font-size:1rem; pointer-events:none;
+  }
+  .input-group .form-input { padding-left:42px; }
+
+  .forgot-link {
+    font-size:0.8rem; color:var(--text3);
+    text-decoration:none; transition:color 0.15s;
+  }
+  .forgot-link:hover { color:var(--accent2); }
+  .btn-signin {
+    background:linear-gradient(135deg, var(--accent), var(--accent3));
+    color:#fff; border:none; cursor:pointer;
+    width:100%; padding:14px;
+    border-radius:var(--r-sm);
+    font-family:'Syne',sans-serif;
+    font-size:0.95rem; font-weight:700;
+    letter-spacing:0.01em;
+    transition:all 0.2s;
+    box-shadow:0 4px 24px rgba(124,106,247,0.3);
+  }
+  .btn-signin:hover { transform:translateY(-1px); box-shadow:0 8px 32px rgba(124,106,247,0.45); }
+
+  .auth-footer { text-align:center; margin-top:28px; font-size:0.85rem; color:var(--text3); }
+  .auth-footer a { color:var(--accent2); text-decoration:none; font-weight:500; }
+  .auth-footer a:hover { text-decoration:underline; }
+
+  .demo-hint {
+    background:rgba(124,106,247,0.06);
+    border:1px solid rgba(124,106,247,0.15);
+    border-radius:var(--r-sm);
+    padding:12px 16px;
+    font-size:0.78rem;
+    color:var(--text2);
+    margin-bottom:24px;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  /* NEW: Account Number Badge */
+  .account-badge {
+    display:inline-block;
+    background:linear-gradient(135deg, rgba(124,106,247,0.15), rgba(59,130,246,0.1));
+    border:1px solid rgba(124,106,247,0.3);
+    border-radius:8px;
+    padding:12px 50px;
+    margin-bottom:24px;
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.85rem;
+  }
+
+  .account-badge-label {
+    display:block;
+    color:var(--text3);
+    font-size:0.75rem;
+    margin-bottom:6px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+  }
+
+  .account-badge-number {
+    display:block;
+    color:var(--accent);
+    font-size:1rem;
+    font-weight:700;
+    letter-spacing:0.08em;
+  }
+
+  .account-badge .copy-btn {
+    display:inline-block;
+    margin-left:8px;
+    padding:4px 8px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
+    font-size:0.75rem;
+    transition:all 0.15s;
+  }
+
+  .account-badge .copy-btn:hover {
+    transform:scale(1.05);
+    box-shadow:0 4px 12px rgba(124,106,247,0.3);
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="auth-glow"></div>
+<div class="page-center">
+  <div class="auth-box">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="auth-logo-mark">P</div>
+        PyBank
+      </div>
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-sub">Sign in to your account to continue</p>
+
+      <!-- NEW: Show Account Number Badge if Just Registered -->
+      {% if new_account %}
+      <div class="account-badge">
+        <span class="account-badge-label">✅ Your New Account Number</span>
+        <span class="account-badge-number">{{ new_account }}</span>
+
+      </div>
+      <p style="text-align:center; font-size:0.85rem; color:var(--text2); margin-bottom:24px;"
+      </p>
+      {% endif %}
+
+      <form method="POST" action="{{ url_for('login') }}">
+        <div class="form-group">
+          <label class="form-label">Account Number</label>
+          <div class="input-group">
+            <span class="input-icon">🏦</span>
+            <input class="form-input" type="text" name="account_number"
+              id="account_number"
+              value="{{ new_account if new_account else prefilled_account }}"
+              placeholder="0000 0000 0000"
+              required
+              autocomplete="off"
+              style="letter-spacing:0.08em" />
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="flex-between" style="margin-bottom:8px">
+            <label class="form-label" style="margin-bottom:0">PIN</label>
+            <a href="{{ url_for('forgot_pin') }}" class="forgot-link">Forgot PIN?</a>
+          </div>
+          <div class="input-group">
+            <span class="input-icon">🔒</span>
+            <input class="form-input" type="password" name="pin"
+              placeholder="••••" maxlength="4" required autocomplete="off" />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-signin mt-8">Sign In →</button>
+      </form>
+
+      <div class="auth-footer">
+        Don't have an account?
+        <a href="{{ url_for('register') }}">Open one free</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW: Copy to Clipboard Script -->
+<script>
+function copyAccountNumber(accountNumber) {
+  // Remove spaces for clipboard
+  const cleanNumber = accountNumber.replace(/\s/g, '');
+
+  navigator.clipboard.writeText(cleanNumber).then(() => {
+    // Visual feedback
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    btn.style.background = '#22c55e';
+
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.background = 'var(--accent)';
+    }, 2000);
+  }).catch(() => {
+    alert('Failed to copy account number');
+  });
+}
+
+// Format account number input with spaces as user types
+document.getElementById('account_number').addEventListener('input', function(e) {
+  let value = e.target.value.replace(/\s/g, '');
+  if (value.length > 0) {
+    let formatted = '';
+    for (let i = 0; i < value.length; i++) {
+      if (i > 0 && i % 4 === 0) formatted += ' ';
+      formatted += value[i];
+    }
+    e.target.value = formatted;
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Transfer — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  .transfer-page { min-height:calc(100vh - 64px); display:flex; align-items:center; justify-content:center; padding:40px 20px; }
+  .transfer-card { width:100%; max-width:520px; background:var(--bg2); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+  .transfer-hero {
+    background:linear-gradient(135deg, #0f0d1f, #0d1520);
+    padding:32px 36px;
+    position:relative; overflow:hidden;
+  }
+  .transfer-hero::before {
+    content:'';
+    position:absolute; top:-60px; right:-60px;
+    width:200px; height:200px;
+    background:radial-gradient(ellipse, rgba(124,106,247,0.2) 0%, transparent 70%);
+  }
+  .transfer-icon { font-size:2.5rem; margin-bottom:12px; }
+  .transfer-title { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:6px; }
+  .transfer-sub { font-size:0.85rem; color:var(--text2); }
+  .transfer-body { padding:32px 36px; }
+
+  .verify-row { display:flex; gap:10px; }
+  .verify-row .form-input { flex:1; }
+
+  .verified-box {
+    background:rgba(34,197,94,0.06);
+    border:1px solid rgba(34,197,94,0.25);
+    border-radius:var(--r-sm);
+    padding:13px 16px;
+    font-size:0.85rem; color:var(--green);
+    display:none; align-items:center; gap:10px;
+    margin-bottom:16px;
+  }
+  .verified-box.show { display:flex; }
+
+  .not-found-box {
+    background:var(--red-bg);
+    border:1px solid rgba(239,68,68,0.25);
+    border-radius:var(--r-sm);
+    padding:13px 16px;
+    font-size:0.85rem; color:var(--red);
+    display:none; align-items:center; gap:10px;
+    margin-bottom:16px;
+  }
+  .not-found-box.show { display:flex; }
+
+  .btn-transfer {
+    background:linear-gradient(135deg, var(--accent), var(--accent3));
+    color:#fff; border:none; cursor:pointer;
+    width:100%; padding:14px;
+    border-radius:var(--r-sm);
+    font-family:'Syne',sans-serif; font-size:0.95rem; font-weight:700;
+    box-shadow:0 4px 24px rgba(124,106,247,0.3);
+    transition:all 0.2s;
+  }
+  .btn-transfer:hover { transform:translateY(-1px); box-shadow:0 8px 32px rgba(124,106,247,0.45); }
+  .btn-transfer:disabled { opacity:0.35; cursor:not-allowed; transform:none; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="transfer-page">
+  <div class="transfer-card">
+    <div class="transfer-hero">
+      <div class="transfer-icon">📲</div>
+      <div class="transfer-title">Send Money</div>
+      <div class="transfer-sub">Transfer to any PyBank account instantly using their phone number</div>
+    </div>
+    <div class="transfer-body">
+
+      <div class="form-group">
+        <label class="form-label">Recipient Phone Number</label>
+        <div class="verify-row">
+          <input class="form-input" type="tel" id="phone-input"
+            placeholder="9876543210" maxlength="10" autocomplete="off" />
+          <button type="button" class="btn btn-outline" onclick="verifyPhone()">Verify</button>
+        </div>
+        <div class="form-hint">We'll confirm the recipient before sending.</div>
+      </div>
+
+      <div class="verified-box" id="verified-box">
+        <span>✓</span>
+        <span id="verified-text">Recipient verified</span>
+      </div>
+      <div class="not-found-box" id="not-found-box">
+        <span>✕</span>
+        <span>Phone number not found in PyBank.</span>
+      </div>
+
+      <form method="POST" action="{{ url_for('transfer') }}" id="transfer-form">
+        <input type="hidden" name="phone" id="phone-hidden" />
+        <div class="form-group">
+          <label class="form-label">Amount (USD)</label>
+          <input class="form-input" type="number" name="amount"
+            placeholder="0.00" min="1" step="0.01" required id="amt-input" />
+        </div>
+        <button type="submit" class="btn-transfer" id="send-btn" disabled>Verify recipient first</button>
+      </form>
+
+      <div style="margin-top:20px;text-align:center">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-ghost">← Back to Dashboard</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let phoneVerified = false;
+
+  async function verifyPhone() {
+    const phone = document.getElementById('phone-input').value.trim();
+    const vb = document.getElementById('verified-box');
+    const nb = document.getElementById('not-found-box');
+    const btn = document.getElementById('send-btn');
+    vb.classList.remove('show'); nb.classList.remove('show');
+
+    if (!phone) return;
+
+    const res  = await fetch('/api/lookup-phone', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({phone})
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      vb.classList.add('show');
+      document.getElementById('verified-text').textContent =
+        `✓ ${data.name} — ${data.masked}`;
+      document.getElementById('phone-hidden').value = phone;
+      phoneVerified = true;
+      btn.disabled = false;
+      btn.textContent = `Send to ${data.name} →`;
+    } else {
+      nb.classList.add('show');
+      phoneVerified = false;
+      btn.disabled = true;
+      btn.textContent = 'Verify recipient first';
+    }
+  }
+
+  document.getElementById('phone-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); verifyPhone(); }
+  });
+</script>
+{% endblock %}

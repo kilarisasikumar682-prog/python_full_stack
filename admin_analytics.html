@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Analytics - PyBank Admin</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            /* Royal Theme Palette */
+            --primary: #d4af37;   /* Metallic Gold */
+            --success: #059669;   /* Emerald */
+            --warning: #d97706;   /* Amber */
+            --danger: #dc2626;    /* Ruby */
+            --info: #2563eb;      /* Sapphire */
+            --purple: #6b21a8;    /* Royal Purple */
+            
+            --bg-base: #050505;   /* Deep Black */
+            --bg-card: #121212;   /* Dark Charcoal */
+            --bg-hover: #1a1a1a;
+            
+            --text-main: #f8fafc; /* Off-White */
+            --text-muted: #94a3b8;/* Light Gray */
+            --border-color: #222222;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-main);
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #0a0a0a 0%, #170d22 100%);
+            color: var(--text-main);
+            padding: 2rem;
+            border-bottom: 2px solid var(--primary);
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.1);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+        
+        .header-subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid;
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: #333;
+        }
+        
+        .stat-card.primary { border-left-color: var(--primary); }
+        .stat-card.success { border-left-color: var(--success); }
+        .stat-card.warning { border-left-color: var(--warning); }
+        .stat-card.danger { border-left-color: var(--danger); }
+        .stat-card.info { border-left-color: var(--info); }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .chart-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        .chart-card.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        .chart-container.large {
+            height: 400px;
+        }
+        
+        /* Table */
+        .table-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            margin-bottom: 2rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            text-align: left;
+            padding: 1rem;
+            background: var(--bg-hover);
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+        
+        tr:hover td {
+            background: var(--bg-hover);
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: var(--primary);
+        }
+        
+        .spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Refresh Button */
+        .refresh-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+            background: #e6c456;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                padding: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1 class="header-title">👑 Comprehensive Analytics Dashboard</h1>
+            <p class="header-subtitle">Real-time insights from your banking data</p>
+        </div>
+    </div>
+    
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading royal analytics...</p>
+    </div>
+    
+    <div id="content" class="container" style="display: none;">
+        
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-label">Total Accounts</div>
+                <div class="stat-value" id="totalAccounts">0</div>
+                <div class="stat-subtitle" id="accountTypes">-</div>
+            </div>
+            
+            <div class="stat-card success">
+                <div class="stat-label">Total Balance</div>
+                <div class="stat-value" id="totalBalance">$0</div>
+                <div class="stat-subtitle" id="avgBalance">-</div>
+            </div>
+            
+            <div class="stat-card info">
+                <div class="stat-label">Total Transactions</div>
+                <div class="stat-value" id="totalTransactions">0</div>
+                <div class="stat-subtitle" id="transactionVolume">-</div>
+            </div>
+            
+            <div class="stat-card warning">
+                <div class="stat-label">Pending Deposits</div>
+                <div class="stat-value" id="pendingDeposits">0</div>
+                <div class="stat-subtitle" id="pendingAmount">-</div>
+            </div>
+            
+            <div class="stat-card danger">
+                <div class="stat-label">Active Loans</div>
+                <div class="stat-value" id="activeLoans">0</div>
+                <div class="stat-subtitle" id="loanOutstanding">-</div>
+            </div>
+            
+            <div class="stat-card primary">
+                <div class="stat-label">Avg CIBIL Score</div>
+                <div class="stat-value" id="avgCibil">0</div>
+                <div class="stat-subtitle">Credit health</div>
+            </div>
+        </div>
+        
+        <div class="charts-grid">
+            <div class="chart-card full-width">
+                <h2 class="chart-title">Transaction Trends (Last 30 Days)</h2>
+                <div class="chart-container large">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <h2 class="chart-title">Transaction Volume by Type</h2>
+                <div class="chart-container">
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <h2 class="chart-title">CIBIL Score Distribution</h2>
+                <div class="chart-container">
+                    <canvas id="cibilChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <h2 class="chart-title">Activity by Hour</h2>
+                <div class="chart-container">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <h2 class="chart-title">Activity by Day of Week</h2>
+                <div class="chart-container">
+                    <canvas id="dayChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-card">
+            <h2 class="chart-title">Top Active Accounts</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Account</th>
+                        <th>Holder</th>
+                        <th>Balance</th>
+                        <th>CIBIL</th>
+                        <th>Transactions</th>
+                        <th>Total Volume</th>
+                    </tr>
+                </thead>
+                <tbody id="topAccountsTable">
+                    <tr><td colspan="6" style="text-align: center; border: none;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+    
+    <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh</button>
+    
+    <script>
+        // Set Chart.js defaults for Dark Theme
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = '#222222';
+
+        let charts = {};
+        
+        // Format currency
+        function formatCurrency(amount) {
+            return '$' + parseFloat(amount).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        
+        // Load dashboard
+        async function loadDashboard() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('content').style.display = 'none';
+                
+                // Fetch overview data
+                const overviewRes = await fetch('/api/admin/analytics/overview');
+                const overview = await overviewRes.json();
+                
+                if (overview.success) {
+                    updateStats(overview);
+                    updateCharts(overview);
+                    updateTables(overview);
+                }
+                
+                // Fetch transaction breakdown
+                const breakdownRes = await fetch('/api/admin/analytics/transaction-breakdown');
+                const breakdown = await breakdownRes.json();
+                
+                if (breakdown.success) {
+                    updateBreakdownCharts(breakdown);
+                }
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                alert('Failed to load dashboard data');
+            }
+        }
+        
+        // Update stats
+        function updateStats(data) {
+            document.getElementById('totalAccounts').textContent = data.accounts.total;
+            document.getElementById('accountTypes').textContent = 
+                `${data.accounts.savings} Savings • ${data.accounts.checking} Checking`;
+            
+            document.getElementById('totalBalance').textContent = formatCurrency(data.accounts.total_balance);
+            document.getElementById('avgBalance').textContent = 
+                `Avg: ${formatCurrency(data.accounts.avg_balance)}`;
+            
+            const totalTx = data.transactions.volume_by_type.reduce((sum, tx) => sum + tx.count, 0);
+            const totalVolume = data.transactions.volume_by_type.reduce((sum, tx) => sum + tx.total, 0);
+            document.getElementById('totalTransactions').textContent = totalTx;
+            document.getElementById('transactionVolume').textContent = `Volume: ${formatCurrency(totalVolume)}`;
+            
+            document.getElementById('pendingDeposits').textContent = data.deposit_requests.pending;
+            document.getElementById('pendingAmount').textContent = formatCurrency(data.deposit_requests.pending_amount);
+            
+            document.getElementById('activeLoans').textContent = data.loans.active_loans;
+            document.getElementById('loanOutstanding').textContent = 
+                `Outstanding: ${formatCurrency(data.loans.total_outstanding)}`;
+            
+            document.getElementById('avgCibil').textContent = Math.round(data.accounts.avg_cibil);
+        }
+        
+        // Update charts
+        function updateCharts(data) {
+            // Transaction trends
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            if (charts.trend) charts.trend.destroy();
+            
+            const dates = data.transactions.daily_trends.map(d => d.date);
+            const deposits = data.transactions.daily_trends.map(d => d.deposits);
+            const withdrawals = data.transactions.daily_trends.map(d => d.withdrawals);
+            const transfers = data.transactions.daily_trends.map(d => d.transfers);
+            
+            charts.trend = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Deposits',
+                            data: deposits,
+                            borderColor: '#059669', // Emerald
+                            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Withdrawals',
+                            data: withdrawals,
+                            borderColor: '#dc2626', // Ruby
+                            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Transfers',
+                            data: transfers,
+                            borderColor: '#d4af37', // Gold
+                            backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+            
+            // Transaction type pie
+            const typeCtx = document.getElementById('typeChart').getContext('2d');
+            if (charts.type) charts.type.destroy();
+            
+            charts.type = new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.transactions.volume_by_type.map(t => t.type),
+                    datasets: [{
+                        data: data.transactions.volume_by_type.map(t => t.total),
+                        backgroundColor: [
+                            '#d4af37', '#059669', '#2563eb', '#dc2626', '#6b21a8'
+                        ],
+                        borderColor: '#121212',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+            
+            // CIBIL distribution
+            const cibilCtx = document.getElementById('cibilChart').getContext('2d');
+            if (charts.cibil) charts.cibil.destroy();
+            
+            charts.cibil = new Chart(cibilCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Excellent (750+)', 'Good (600-749)', 'Poor (<600)'],
+                    datasets: [{
+                        label: 'Accounts',
+                        data: [
+                            data.accounts.cibil_distribution.excellent,
+                            data.accounts.cibil_distribution.good,
+                            data.accounts.cibil_distribution.poor
+                        ],
+                        backgroundColor: ['#d4af37', '#6b21a8', '#dc2626']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+        
+        // Update breakdown charts
+        function updateBreakdownCharts(data) {
+            // Hourly activity
+            const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+            if (charts.hourly) charts.hourly.destroy();
+            
+            const hours = Array.from({length: 24}, (_, i) => i);
+            const hourlyCounts = hours.map(h => {
+                const found = data.by_hour.find(item => item.hour === h);
+                return found ? found.count : 0;
+            });
+            
+            charts.hourly = new Chart(hourlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: hours.map(h => `${h}:00`),
+                    datasets: [{
+                        label: 'Transactions',
+                        data: hourlyCounts,
+                        backgroundColor: '#d4af37' // Gold
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+            
+            // Day of week
+            const dayCtx = document.getElementById('dayChart').getContext('2d');
+            if (charts.day) charts.day.destroy();
+            
+            charts.day = new Chart(dayCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.by_day.map(d => d.day),
+                    datasets: [{
+                        label: 'Volume',
+                        data: data.by_day.map(d => d.volume),
+                        backgroundColor: '#6b21a8' // Purple
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+        
+        // Update tables
+        function updateTables(data) {
+            const tbody = document.getElementById('topAccountsTable');
+            tbody.innerHTML = '';
+            
+            data.top_accounts.forEach(acc => {
+                const row = `
+                    <tr>
+                        <td style="font-family: monospace; color: var(--primary);">${acc.account_number}</td>
+                        <td style="font-weight: 600;">${acc.holder}</td>
+                        <td>${formatCurrency(acc.balance)}</td>
+                        <td>${acc.cibil}</td>
+                        <td>${acc.transaction_count}</td>
+                        <td>${formatCurrency(acc.total_volume)}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+        
+        // Auto-refresh every 5 minutes
+        setInterval(loadDashboard, 5 * 60 * 1000);
+        
+        // Load on page load
+        window.addEventListener('load', loadDashboard);
+    </script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% block title %}My Loans — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  .ml-page { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+  .page-heading {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+  }
+  .page-sub { font-size: 0.88rem; color: var(--text2); margin-bottom: 32px; }
+
+  .loan-detail-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .ld-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .ld-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent2);
+  }
+  .ld-product { font-size: 0.85rem; color: var(--text2); margin-top: 4px; }
+  .ld-status {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 100px;
+  }
+  .ld-status.active { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+  .ld-status.closed { background: rgba(255,255,255,0.05); color: var(--text3); border: 1px solid var(--border); }
+
+  .ld-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 768px) { .ld-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .ld-grid { grid-template-columns: 1fr; } }
+  .ld-cell {
+    background: rgba(255,255,255,0.02);
+    padding: 16px;
+    border-radius: var(--r-sm);
+  }
+  .ld-cell-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .ld-cell-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 800;
+  }
+
+  .progress-section {
+    margin-bottom: 24px;
+  }
+  .progress-label {
+    font-size: 0.78rem;
+    color: var(--text2);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-bar {
+    height: 8px;
+    background: var(--bg3);
+    border-radius: 100px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--accent));
+    border-radius: 100px;
+    transition: width 1s ease;
+  }
+  .progress-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--text3);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .app-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .ac-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .ac-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--accent2);
+  }
+  .ac-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 100px;
+  }
+  .ac-badge.pending { background: rgba(245,158,11,0.12); color: var(--gold); border: 1px solid rgba(245,158,11,0.25); }
+  .ac-badge.approved { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+  .ac-badge.rejected { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+  .ac-product { font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; }
+  .ac-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 600px) { .ac-grid { grid-template-columns: 1fr; } }
+  .ac-item {
+    font-size: 0.75rem;
+  }
+  .ac-label { color: var(--text3); margin-bottom: 2px; }
+  .ac-value { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+  .ac-footer {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.75rem;
+    color: var(--text3);
+  }
+  .ac-rejection {
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.2);
+    padding: 10px 14px;
+    border-radius: var(--r-sm);
+    font-size: 0.8rem;
+    color: var(--red);
+    margin-top: 10px;
+  }
+
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text3);
+  }
+  .empty-state .es-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="ml-page">
+  <a href="{{ url_for('loans_marketplace') }}" class="btn btn-ghost" style="padding-left: 0; margin-bottom: 16px;">← Back to Loans</a>
+  
+  <h1 class="page-heading">My Loans</h1>
+  <p class="page-sub">Manage your active loans and view application history</p>
+
+  <h2 style="font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; margin-top: 32px;">Active Loans</h2>
+  
+  {% if active %}
+    {% for loan in active %}
+    <div class="loan-detail-card">
+      <div class="ld-header">
+        <div>
+          <div class="ld-id">{{ loan.loan_id }}</div>
+          <div class="ld-product">{{ loan.product_name or 'Loan' }}</div>
+        </div>
+        <span class="ld-status {{ loan.status }}">{{ loan.status }}</span>
+      </div>
+
+      <div class="ld-grid">
+        <div class="ld-cell">
+          <div class="ld-cell-label">EMI Amount</div>
+          <div class="ld-cell-value" style="color: var(--accent2);">${{ "{:,.2f}".format(loan.emi_amount) }}</div>
+        </div>
+        <div class="ld-cell">
+          <div class="ld-cell-label">Principal</div>
+          <div class="ld-cell-value">${{ "{:,.0f}".format(loan.principal_amount) }}</div>
+        </div>
+        <div class="ld-cell">
+          <div class="ld-cell-label">Outstanding</div>
+          <div class="ld-cell-value" style="color: var(--gold);">${{ "{:,.2f}".format(loan.outstanding_balance) }}</div>
+        </div>
+        <div class="ld-cell">
+          <div class="ld-cell-label">Interest Rate</div>
+          <div class="ld-cell-value">{{ "%.2f"|format(loan.interest_rate * 100) }}%</div>
+        </div>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-label">
+          <span><strong>Repayment Progress</strong></span>
+          <span>{{ loan.emis_paid }}/{{ loan.tenure_months }} EMIs</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: {{ (loan.emis_paid / loan.tenure_months * 100) | round | int }}%"></div>
+        </div>
+        <div class="progress-stats">
+          <span>Paid: ${{ "{:,.2f}".format(loan.principal_amount - loan.outstanding_balance) }}</span>
+          <span>{{ loan.emis_remaining }} EMIs remaining</span>
+        </div>
+      </div>
+
+      {% if loan.status == 'active' %}
+      <form method="POST" action="{{ url_for('pay_emi', loan_id=loan.loan_id) }}">
+        <button type="submit" class="btn btn-success btn-lg">
+          💳 Pay EMI — ${{ "{:,.2f}".format(loan.emi_amount) }}
+        </button>
+      </form>
+      {% else %}
+      <div style="text-align: center; padding: 12px; background: rgba(34,197,94,0.08); border-radius: var(--r-sm); color: var(--green);">
+        ✅ Loan fully repaid! Congratulations!
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="es-icon">📭</div>
+      <div>No active loans</div>
+    </div>
+  {% endif %}
+
+  <h2 style="font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; margin-top: 40px;">Application History</h2>
+
+  {% if applications %}
+    {% for app in applications %}
+    <div class="app-card">
+      <div class="ac-header">
+        <div class="ac-id">{{ app.application_id }}</div>
+        <span class="ac-badge {{ app.status }}">{{ app.status }}</span>
+      </div>
+      <div class="ac-product">{{ app.product_name }}</div>
+      <div class="ac-grid">
+        <div class="ac-item">
+          <div class="ac-label">Amount</div>
+          <div class="ac-value">${{ "{:,.2f}".format(app.amount) }}</div>
+        </div>
+        <div class="ac-item">
+          <div class="ac-label">EMI</div>
+          <div class="ac-value">${{ "{:,.2f}".format(app.emi_amount) }}</div>
+        </div>
+        <div class="ac-item">
+          <div class="ac-label">Tenure</div>
+          <div class="ac-value">{{ app.tenure_months }} months</div>
+        </div>
+        <div class="ac-item">
+          <div class="ac-label">Interest Rate</div>
+          <div class="ac-value">{{ "%.2f"|format(app.interest_rate * 100) }}%</div>
+        </div>
+        <div class="ac-item">
+          <div class="ac-label">CIBIL at Apply</div>
+          <div class="ac-value">{{ app.cibil_at_application }}</div>
+        </div>
+        <div class="ac-item">
+          <div class="ac-label">Applied</div>
+          <div class="ac-value" style="font-size: 0.72rem;">{{ app.created_at }}</div>
+        </div>
+      </div>
+      {% if app.status == 'rejected' and app.rejection_reason %}
+      <div class="ac-rejection">
+        <strong>Rejection Reason:</strong> {{ app.rejection_reason }}
+      </div>
+      {% endif %}
+      {% if app.purpose %}
+      <div class="ac-footer">
+        <strong>Purpose:</strong> {{ app.purpose }}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="es-icon">📋</div>
+      <div>No application history</div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

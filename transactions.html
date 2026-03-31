@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Transaction History — PyBank{% endblock %}
+
+{% block head %}
+<style>
+  .txn-page { max-width:860px; margin:0 auto; padding:40px 24px 80px; }
+  .page-heading { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:4px; }
+  .page-sub { font-size:0.88rem; color:var(--text2); margin-bottom:32px; }
+
+  .filter-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+  .filter-btn {
+    font-size:0.73rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;
+    padding:7px 16px; border-radius:100px;
+    border:1px solid var(--border); background:transparent; color:var(--text3);
+    cursor:pointer; transition:all 0.15s;
+  }
+  .filter-btn:hover  { color:var(--text2); border-color:rgba(255,255,255,0.2); }
+  .filter-btn.active { background:rgba(124,106,247,0.12); border-color:var(--accent); color:var(--accent2); }
+
+  .txn-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
+  .txn-item {
+    display:flex; align-items:center; gap:14px;
+    padding:15px 24px;
+    border-bottom:1px solid rgba(255,255,255,0.03);
+    transition:background 0.1s;
+  }
+  .txn-item:last-child { border-bottom:none; }
+  .txn-item:hover { background:rgba(255,255,255,0.02); }
+  .txn-item.hidden { display:none; }
+  .txn-ico { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+  .txn-ico.in  { background:var(--green-bg); }
+  .txn-ico.out { background:var(--red-bg); }
+  .txn-ico.sys { background:var(--blue-bg); }
+  .txn-info { flex:1; min-width:0; }
+  .txn-type { font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--text); }
+  .txn-desc { font-size:0.75rem; color:var(--text3); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .txn-date { font-size:0.7rem; color:var(--text3); font-family:'JetBrains Mono',monospace; margin-top:3px; }
+  .txn-right { text-align:right; flex-shrink:0; }
+  .txn-amt { font-family:'JetBrains Mono',monospace; font-size:0.92rem; font-weight:600; }
+  .txn-amt.credit { color:var(--green); }
+  .txn-amt.debit  { color:var(--red); }
+
+  .empty-state { padding:60px; text-align:center; color:var(--text3); }
+  .empty-state .es-ico { font-size:3rem; margin-bottom:12px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="txn-page">
+  <a href="{{ url_for('dashboard') }}" class="btn btn-ghost" style="padding-left:0;margin-bottom:16px">← Dashboard</a>
+  <div class="page-heading">Transaction History</div>
+  <div class="page-sub">All activity on your account — last 100 entries</div>
+
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="filterTxns('all',this)">All</button>
+    <button class="filter-btn" onclick="filterTxns('DEPOSIT',this)">Deposits</button>
+    <button class="filter-btn" onclick="filterTxns('WITHDRAW',this)">Withdrawals</button>
+    <button class="filter-btn" onclick="filterTxns('TRANSFER',this)">Transfers</button>
+    <button class="filter-btn" onclick="filterTxns('INTEREST',this)">Interest</button>
+  </div>
+
+  {% if txns %}
+  <div class="txn-card">
+    {% for t in txns %}
+    {% set is_credit = t.log_type in ['DEPOSIT','TRANSFER_IN','INTEREST'] %}
+    {% set is_debit  = t.log_type in ['WITHDRAW','TRANSFER_OUT'] %}
+    {% set icons = {'DEPOSIT':'💰','WITHDRAW':'💸','TRANSFER_OUT':'📤','TRANSFER_IN':'📥','INTEREST':'📈','ACCOUNT_CREATED':'🎉','ACCOUNT_CLOSED':'🗑️','ADMIN_FREEZE':'❄️','PIN_RESET':'🔐','SECURITY_ALERT':'⚠️'} %}
+    <div class="txn-item" data-type="{{ t.log_type }}">
+      <div class="txn-ico {{ 'in' if is_credit else 'out' if is_debit else 'sys' }}">
+        {{ icons.get(t.log_type, '💳') }}
+      </div>
+      <div class="txn-info">
+        <div class="txn-type">{{ t.log_type.replace('_',' ') }}</div>
+        {% if t.description %}
+        <div class="txn-desc">{{ t.description }}</div>
+        {% endif %}
+        <div class="txn-date">{{ t.created_at }}</div>
+      </div>
+      <div class="txn-right">
+        {% if t.amount %}
+        <div class="txn-amt {{ 'credit' if is_credit else 'debit' if is_debit else '' }}">
+          {{ '+' if is_credit else '-' if is_debit else '' }}${{ "%.2f"|format(t.amount) }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="txn-card">
+    <div class="empty-state"><div class="es-ico">📭</div><div>No transactions on this account.</div></div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function filterTxns(type, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.txn-item').forEach(item => {
+      const t = item.dataset.type || '';
+      if (type === 'all') { item.classList.remove('hidden'); return; }
+      item.classList.toggle('hidden', !t.includes(type));
+    });
+  }
+</script>
+{% endblock %}

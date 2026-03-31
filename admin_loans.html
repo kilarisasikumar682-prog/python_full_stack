@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+{% block title %}Loan Management — Admin{% endblock %}
+
+{% block head %}
+<style>
+  .al-page { max-width: 1200px; margin: 0 auto; padding: 40px 24px 80px; }
+  
+  /* Stats row */
+  .al-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 768px) { .al-stats { grid-template-columns: repeat(2, 1fr); } }
+  .al-stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .al-stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+  .al-stat-card.pending::after { background: #f59e0b; }
+  .al-stat-card.active::after  { background: #22c55e; }
+  .al-stat-card.total::after   { background: #7c6af7; }
+  .al-stat-card.out::after     { background: #ef4444; }
+  .al-stat-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+  .al-stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .al-stat-value.pending { color: #f59e0b; }
+  .al-stat-value.active  { color: #22c55e; }
+  .al-stat-value.total   { color: #a99bff; }
+  .al-stat-value.out     { color: #ef4444; }
+
+  /* Tabs */
+  .al-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .al-tab {
+    padding: 12px 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text3);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .al-tab:hover { color: var(--text2); }
+  .al-tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* Pending applications table */
+  .pending-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid #f59e0b;
+    border-radius: var(--r);
+    padding: 24px;
+    margin-bottom: 16px;
+    transition: all 0.2s;
+  }
+  .pending-card:hover {
+    border-color: rgba(245,158,11,0.4);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .pc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .pc-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pc-avatar {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+  .pc-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .pc-acc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+  .pc-cibil {
+    background: rgba(34,197,94,0.12);
+    color: var(--green);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .pc-product {
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .pc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 768px) { .pc-grid { grid-template-columns: repeat(2, 1fr); } }
+  .pc-cell {
+    background: rgba(255,255,255,0.02);
+    padding: 12px;
+    border-radius: var(--r-sm);
+  }
+  .pc-cell-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+  .pc-cell-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .pc-purpose {
+    background: rgba(255,255,255,0.03);
+    padding: 10px 14px;
+    border-radius: var(--r-sm);
+    font-size: 0.8rem;
+    color: var(--text2);
+    margin-bottom: 16px;
+  }
+  .pc-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* Active loans */
+  .active-loan-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid #22c55e;
+    border-radius: var(--r);
+    padding: 20px 24px;
+    margin-bottom: 14px;
+  }
+  .alc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .alc-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent2);
+  }
+  .alc-holder {
+    font-size: 0.82rem;
+    color: var(--text2);
+    margin-top: 2px;
+  }
+  .alc-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 900px) { .alc-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px) { .alc-grid { grid-template-columns: 1fr; } }
+  .alc-item {
+    font-size: 0.75rem;
+  }
+  .alc-label { color: var(--text3); margin-bottom: 2px; }
+  .alc-value { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+
+  /* Reject modal */
+  .reject-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+  }
+  .reject-modal.show { display: flex; }
+  .reject-modal-content {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 32px;
+    max-width: 460px;
+    width: 90%;
+  }
+  .reject-modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text3);
+  }
+  .empty-state .es-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="al-page">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <h1 style="font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 4px;">Loan Management</h1>
+      <p style="font-size: 0.88rem; color: var(--text2);">Approve, reject, and monitor all loan applications</p>
+    </div>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-ghost">← Admin Panel</a>
+  </div>
+
+  <!-- Stats -->
+  <div class="al-stats">
+    <div class="al-stat-card pending">
+      <div class="al-stat-label">Pending Applications</div>
+      <div class="al-stat-value pending">{{ stats.pending }}</div>
+    </div>
+    <div class="al-stat-card active">
+      <div class="al-stat-label">Active Loans</div>
+      <div class="al-stat-value active">{{ stats.active }}</div>
+    </div>
+    <div class="al-stat-card total">
+      <div class="al-stat-label">Total Disbursed</div>
+      <div class="al-stat-value total">${{ "{:,.0f}".format(stats.total_disbursed) }}</div>
+    </div>
+    <div class="al-stat-card out">
+      <div class="al-stat-label">Outstanding</div>
+      <div class="al-stat-value out">${{ "{:,.0f}".format(stats.total_outstanding) }}</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="al-tabs">
+    <button class="al-tab active" onclick="switchTab('pending', this)">⏳ Pending ({{ pending | length }})</button>
+    <button class="al-tab" onclick="switchTab('active', this)">📊 Active Loans ({{ active | length }})</button>
+    <button class="al-tab" onclick="switchTab('history', this)">📋 All Applications</button>
+  </div>
+
+  <!-- Tab: Pending -->
+  <div class="tab-pane active" id="tab-pending">
+    {% if pending %}
+      {% for app in pending %}
+      <div class="pending-card">
+        <div class="pc-header">
+          <div class="pc-left">
+            <div class="pc-avatar">📋</div>
+            <div>
+              <div class="pc-name">{{ app.account_holder }}</div>
+              <div class="pc-acc">{{ fmt_acc(app.account_number) }}</div>
+            </div>
+          </div>
+          <div class="pc-cibil">CIBIL: {{ app.cibil_score }}</div>
+        </div>
+
+        <div class="pc-product">{{ app.product_name }}</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text3); margin-bottom: 14px;">
+          Application ID: {{ app.application_id }}
+        </div>
+
+        <div class="pc-grid">
+          <div class="pc-cell">
+            <div class="pc-cell-label">Amount</div>
+            <div class="pc-cell-value">${{ "{:,.0f}".format(app.amount) }}</div>
+          </div>
+          <div class="pc-cell">
+            <div class="pc-cell-label">EMI</div>
+            <div class="pc-cell-value">${{ "{:,.2f}".format(app.emi_amount) }}</div>
+          </div>
+          <div class="pc-cell">
+            <div class="pc-cell-label">Tenure</div>
+            <div class="pc-cell-value">{{ app.tenure_months }} months</div>
+          </div>
+          <div class="pc-cell">
+            <div class="pc-cell-label">Interest</div>
+            <div class="pc-cell-value">{{ "%.2f"|format(app.interest_rate * 100) }}%</div>
+          </div>
+        </div>
+
+        {% if app.purpose %}
+        <div class="pc-purpose">
+          <strong style="font-size: 0.7rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em;">Purpose:</strong>
+          {{ app.purpose }}
+        </div>
+        {% endif %}
+
+        <div class="pc-actions">
+          <form method="POST" action="{{ url_for('admin_approve_loan', app_id=app.application_id) }}" style="display: inline;">
+            <button type="submit" class="btn btn-success" onclick="return confirm('Approve this loan? Funds will be disbursed to the account.')">
+              ✓ Approve & Disburse
+            </button>
+          </form>
+          <button type="button" class="btn btn-danger" onclick="showRejectModal('{{ app.application_id }}')">
+            ✕ Reject
+          </button>
+          <div style="flex: 1; min-width: 200px; font-size: 0.72rem; color: var(--text3); text-align: right; padding-top: 8px;">
+            📅 Applied: {{ app.created_at }}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <div class="es-icon">✅</div>
+        <div>No pending applications</div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Tab: Active -->
+  <div class="tab-pane" id="tab-active">
+    {% if active %}
+      {% for loan in active %}
+      <div class="active-loan-card">
+        <div class="alc-header">
+          <div>
+            <div class="alc-id">{{ loan.loan_id }}</div>
+            <div class="alc-holder">{{ loan.account_holder }} · {{ fmt_acc(loan.account_number) }}</div>
+          </div>
+          <span class="badge badge-green">Active</span>
+        </div>
+        <div class="alc-grid">
+          <div class="alc-item">
+            <div class="alc-label">EMI</div>
+            <div class="alc-value">${{ "{:,.2f}".format(loan.emi_amount) }}</div>
+          </div>
+          <div class="alc-item">
+            <div class="alc-label">Principal</div>
+            <div class="alc-value">${{ "{:,.0f}".format(loan.principal_amount) }}</div>
+          </div>
+          <div class="alc-item">
+            <div class="alc-label">Outstanding</div>
+            <div class="alc-value" style="color: var(--gold);">${{ "{:,.2f}".format(loan.outstanding_balance) }}</div>
+          </div>
+          <div class="alc-item">
+            <div class="alc-label">Progress</div>
+            <div class="alc-value">{{ loan.emis_paid }}/{{ loan.tenure_months }}</div>
+          </div>
+          <div class="alc-item">
+            <div class="alc-label">Disbursed</div>
+            <div class="alc-value" style="font-size: 0.7rem;">{{ loan.disbursed_at }}</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <div class="es-icon">📭</div>
+        <div>No active loans</div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Tab: All Applications -->
+  <div class="tab-pane" id="tab-history">
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Product</th>
+            <th>Amount</th>
+            <th>EMI</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for app in all_apps %}
+          <tr>
+            <td>{{ app.application_id }}</td>
+            <td>{{ app.account_holder }}</td>
+            <td>{{ app.product_name }}</td>
+            <td>${{ "{:,.0f}".format(app.amount) }}</td>
+            <td>${{ "{:,.2f}".format(app.emi_amount) }}</td>
+            <td>
+              <span class="badge {% if app.status=='approved' %}badge-green{% elif app.status=='rejected' %}badge-red{% else %}badge-gold{% endif %}">
+                {{ app.status }}
+              </span>
+            </td>
+            <td>{{ app.created_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="reject-modal" id="reject-modal">
+  <div class="reject-modal-content">
+    <div class="reject-modal-title">Reject Loan Application</div>
+    <form method="POST" id="reject-form">
+      <div class="form-group">
+        <label class="form-label">Rejection Reason</label>
+        <textarea class="form-input" name="reason" rows="3" placeholder="E.g., Insufficient income, high debt ratio..." required style="font-family: 'Instrument Sans', sans-serif; resize: vertical;"></textarea>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button type="submit" class="btn btn-danger btn-full">Confirm Rejection</button>
+        <button type="button" class="btn btn-outline btn-full" onclick="hideRejectModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function switchTab(name, btn) {
+    document.querySelectorAll('.al-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  function showRejectModal(appId) {
+    document.getElementById('reject-form').action = `/admin/loans/reject/${appId}`;
+    document.getElementById('reject-modal').classList.add('show');
+  }
+
+  function hideRejectModal() {
+    document.getElementById('reject-modal').classList.remove('show');
+  }
+</script>
+{% endblock %}
